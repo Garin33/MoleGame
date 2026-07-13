@@ -82,6 +82,21 @@
   let audioContext = null;
   let leaderboardSession = null;
   let leaderboardRows = [];
+  let worldContext = null;
+  const WORLD_SIZE = 520;
+  const world = {
+    time: 0,
+    healTimer: 0,
+    mole: { x: 82, y: 420, targetX: 82, targetY: 420, phase: "walk", facing: 1 },
+    digSpots: [],
+    decorations: [],
+    allies: [
+      { type: "firefly", name: "萤萤", emoji: "✨", x: 65, y: 390, angle: 0 },
+      { type: "hedgehog", name: "刺团", emoji: "🦔", x: 110, y: 438, targetX: 150, targetY: 430, angle: 2 },
+    ],
+    enemies: [],
+    engagedEnemy: null,
+  };
 
   const $ = (id) => document.getElementById(id);
   const elements = {
@@ -103,8 +118,10 @@
     activitySubtitle: $("activity-subtitle"),
     timeLeft: $("time-left"),
     digBar: $("dig-bar"),
+    routeLine: $("route-line"),
     forestScene: $("forest-scene"),
-    sceneMole: $("scene-mole"),
+    worldCanvas: $("world-canvas"),
+    aiState: $("ai-state"),
     findPop: $("find-pop"),
     droppedPile: $("dropped-pile"),
     pauseButton: $("pause-button"),
@@ -404,12 +421,9 @@
     log(`在 ${state.depth}m 处挖到 <b>${ITEMS[itemId].name}</b>，还有 ${coins} 枚松果币。`);
     beep(430, 0.06);
     state.actionProgress = 0;
-    moveMole();
+    finishWorldDig();
 
-    const encounterChance = 0.14 + state.activeZone * 0.05;
-    if (Math.random() < encounterChance) {
-      startEncounter();
-    } else if (Math.random() < 0.09) {
+    if (Math.random() < 0.09) {
       const heal = Math.min(maxHp() - state.hp, 8 + Math.floor(Math.random() * 8));
       if (heal > 0) {
         state.hp += heal;
@@ -426,9 +440,9 @@
     return ENEMIES.filter((candidate) => !candidate.minLevel || state.level >= candidate.minLevel);
   }
 
-  function startEncounter() {
+  function startEncounter(encounterTemplate = null) {
     const templates = availableEnemies();
-    const base = templates[Math.floor(Math.random() * templates.length)];
+    const base = encounterTemplate || templates[Math.floor(Math.random() * templates.length)];
     const scale = 1 + state.activeZone * 0.3 + Math.max(0, state.level - 1) * 0.07;
     enemy = {
       ...base,
@@ -457,7 +471,8 @@
   function battleRound() {
     if (!enemy || mode !== "battle") return;
     const critical = Math.random() < 0.08 + totalLuck() * 0.002;
-    const damage = Math.max(1, Math.round(totalPower() * (0.78 + Math.random() * 0.42) * (critical ? 1.75 : 1)));
+    const allyDamage = 2 + Math.floor(state.level / 3);
+    const damage = Math.max(1, Math.round(totalPower() * (0.78 + Math.random() * 0.42) * (critical ? 1.75 : 1) + allyDamage));
     enemy.currentHp = Math.max(0, enemy.currentHp - damage);
     if (critical) toast(`会心一爪！-${damage}`, "gold");
     else showFind(`⚔ -${damage}`);
@@ -515,6 +530,10 @@
   }
 
   function endBattle() {
+    if (world.engagedEnemy) {
+      respawnWorldEnemy(world.engagedEnemy);
+      world.engagedEnemy = null;
+    }
     enemy = null;
     mode = "digging";
     state.actionProgress = 0;
@@ -665,9 +684,334 @@
     setTimeout(() => elements.findPop.classList.add("hidden"), 1550);
   }
 
-  function moveMole() {
-    elements.sceneMole.style.left = `${16 + Math.random() * 60}%`;
-    elements.sceneMole.style.top = `${48 + Math.random() * 25}%`;
+  function randomWorldPoint(margin = 42) {
+    return {
+      x: margin + Math.random() * (WORLD_SIZE - margin * 2),
+      y: margin + Math.random() * (WORLD_SIZE - margin * 2),
+    };
+  }
+
+  function initWorld() {
+    worldContext = elements.worldCanvas.getContext("2d");
+    world.decorations = Array.from({ length: 54 }, (_, index) => {
+      const point = randomWorldPoint(18);
+      return {
+        ...point,
+        type: index < 22 ? "tree" : index < 38 ? "bush" : index < 47 ? "rock" : "mushroom",
+        size: 0.75 + Math.random() * 0.65,
+        tint: Math.random(),
+      };
+    });
+    world.digSpots = Array.from({ length: 6 }, (_, index) => ({
+      ...randomWorldPoint(65),
+      id: index,
+      sparkle: Math.random() * Math.PI * 2,
+    }));
+    spawnWorldEnemies();
+    chooseNextDigSpot();
+    resizeWorldCanvas();
+  }
+
+  function resizeWorldCanvas() {
+    const size = elements.worldCanvas.clientWidth || WORLD_SIZE;
+    const pixelRatio = Math.min(2, window.devicePixelRatio || 1);
+    elements.worldCanvas.width = Math.round(size * pixelRatio);
+    elements.worldCanvas.height = Math.round(size * pixelRatio);
+    const scale = (size * pixelRatio) / WORLD_SIZE;
+    worldContext?.setTransform(scale, 0, 0, scale, 0, 0);
+  }
+
+  function spawnWorldEnemies() {
+    const templates = availableEnemies();
+    const count = 3 + state.activeZone;
+    world.enemies = Array.from({ length: count }, (_, index) => {
+      const template = templates[index % templates.length];
+      const point = randomWorldPoint(55);
+      const target = randomWorldPoint(55);
+      return {
+        template,
+        x: point.x,
+        y: point.y,
+        targetX: target.x,
+        targetY: target.y,
+        facing: 1,
+        state: "patrol",
+        cooldown: 2500 + index * 900,
+      };
+    });
+  }
+
+  function respawnWorldEnemy(worldEnemy) {
+    const point = randomWorldPoint(55);
+    const target = randomWorldPoint(55);
+    worldEnemy.x = point.x;
+    worldEnemy.y = point.y;
+    worldEnemy.targetX = target.x;
+    worldEnemy.targetY = target.y;
+    worldEnemy.state = "patrol";
+    worldEnemy.cooldown = 9000;
+  }
+
+  function chooseNextDigSpot() {
+    const choices = world.digSpots.filter(
+      (spot) => Math.hypot(spot.x - world.mole.x, spot.y - world.mole.y) > 35,
+    );
+    const spot = choices[Math.floor(Math.random() * choices.length)] || world.digSpots[0];
+    world.mole.targetX = spot.x;
+    world.mole.targetY = spot.y;
+    world.mole.phase = "walk";
+    elements.aiState.textContent = "寻路前往宝点";
+  }
+
+  function finishWorldDig() {
+    const spot = world.digSpots.find(
+      (candidate) => Math.hypot(candidate.x - world.mole.targetX, candidate.y - world.mole.targetY) < 4,
+    );
+    if (spot) {
+      const replacement = randomWorldPoint(65);
+      spot.x = replacement.x;
+      spot.y = replacement.y;
+      spot.sparkle = Math.random() * Math.PI * 2;
+    }
+    chooseNextDigSpot();
+  }
+
+  function moveToward(entity, targetX, targetY, speed, delta) {
+    const dx = targetX - entity.x;
+    const dy = targetY - entity.y;
+    const distance = Math.hypot(dx, dy);
+    if (distance < 0.01) return 0;
+    const step = Math.min(distance, speed * delta);
+    entity.x += (dx / distance) * step;
+    entity.y += (dy / distance) * step;
+    entity.facing = dx >= 0 ? 1 : -1;
+    return distance - step;
+  }
+
+  function updateWorld(delta) {
+    world.time += delta;
+    if (state.paused) return;
+
+    if (mode === "digging" && world.mole.phase === "walk") {
+      const remaining = moveToward(world.mole, world.mole.targetX, world.mole.targetY, 0.072, delta);
+      if (remaining < 2) {
+        world.mole.phase = "dig";
+        state.actionProgress = 0;
+        elements.aiState.textContent = "挥铲挖掘中";
+        updateActivity();
+      }
+    }
+
+    const firefly = world.allies[0];
+    firefly.angle += delta * 0.0024;
+    const glowX = world.mole.x - 22 + Math.cos(firefly.angle) * 16;
+    const glowY = world.mole.y - 25 + Math.sin(firefly.angle * 1.4) * 12;
+    moveToward(firefly, glowX, glowY, 0.1, delta);
+
+    const hedgehog = world.allies[1];
+    if (mode === "battle" && world.engagedEnemy) {
+      moveToward(hedgehog, world.mole.x + 28, world.mole.y + 12, 0.09, delta);
+    } else {
+      const followDistance = Math.hypot(hedgehog.x - world.mole.x, hedgehog.y - world.mole.y);
+      if (followDistance > 105 || Math.hypot(hedgehog.x - hedgehog.targetX, hedgehog.y - hedgehog.targetY) < 4) {
+        hedgehog.targetX = world.mole.x - 35 + Math.random() * 70;
+        hedgehog.targetY = world.mole.y - 35 + Math.random() * 70;
+      }
+      moveToward(hedgehog, hedgehog.targetX, hedgehog.targetY, 0.045, delta);
+    }
+
+    world.healTimer += delta;
+    if (world.healTimer > 14000 && mode !== "battle" && state.hp < maxHp()) {
+      world.healTimer = 0;
+      state.hp = Math.min(maxHp(), state.hp + 3);
+      showFind("✨ 萤萤治疗 +3");
+    }
+
+    world.enemies.forEach((worldEnemy) => {
+      worldEnemy.cooldown = Math.max(0, worldEnemy.cooldown - delta);
+      if (mode === "battle") {
+        if (worldEnemy === world.engagedEnemy) {
+          const angle = world.time * 0.002;
+          moveToward(worldEnemy, world.mole.x + Math.cos(angle) * 38, world.mole.y + Math.sin(angle) * 26, 0.065, delta);
+        }
+        return;
+      }
+      const distanceToMole = Math.hypot(worldEnemy.x - world.mole.x, worldEnemy.y - world.mole.y);
+      if (worldEnemy.cooldown <= 0 && distanceToMole < 100) {
+        worldEnemy.state = "chase";
+        moveToward(worldEnemy, world.mole.x, world.mole.y, 0.052 + state.activeZone * 0.006, delta);
+        if (distanceToMole < 25) {
+          world.engagedEnemy = worldEnemy;
+          startEncounter(worldEnemy.template);
+        }
+      } else {
+        worldEnemy.state = "patrol";
+        if (Math.hypot(worldEnemy.x - worldEnemy.targetX, worldEnemy.y - worldEnemy.targetY) < 5) {
+          const next = randomWorldPoint(48);
+          worldEnemy.targetX = next.x;
+          worldEnemy.targetY = next.y;
+        }
+        moveToward(worldEnemy, worldEnemy.targetX, worldEnemy.targetY, 0.024, delta);
+      }
+    });
+  }
+
+  function drawWorld() {
+    if (!worldContext) return;
+    const ctx = worldContext;
+    ctx.clearRect(0, 0, WORLD_SIZE, WORLD_SIZE);
+
+    const ground = ctx.createLinearGradient(0, 0, WORLD_SIZE, WORLD_SIZE);
+    ground.addColorStop(0, "#8da977");
+    ground.addColorStop(0.55, "#789660");
+    ground.addColorStop(1, "#648354");
+    ctx.fillStyle = ground;
+    ctx.fillRect(0, 0, WORLD_SIZE, WORLD_SIZE);
+
+    const tile = 52;
+    for (let row = 0; row < 10; row += 1) {
+      for (let column = 0; column < 10; column += 1) {
+        if ((row + column) % 2 === 0) {
+          ctx.fillStyle = "rgba(255,250,205,.025)";
+          ctx.fillRect(column * tile, row * tile, tile, tile);
+        }
+      }
+    }
+
+    ctx.save();
+    ctx.strokeStyle = "rgba(211,196,139,.22)";
+    ctx.lineWidth = 30;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(-15, 360);
+    ctx.bezierCurveTo(115, 300, 155, 390, 265, 300);
+    ctx.bezierCurveTo(355, 225, 430, 265, 545, 180);
+    ctx.stroke();
+    ctx.restore();
+
+    world.decorations.forEach((decoration) => drawDecoration(ctx, decoration));
+    world.digSpots.forEach((spot) => drawDigSpot(ctx, spot));
+
+    const actors = [
+      ...world.enemies.map((actor) => ({ actor, kind: "enemy", y: actor.y })),
+      ...world.allies.map((actor) => ({ actor, kind: "ally", y: actor.y })),
+      { actor: world.mole, kind: "mole", y: world.mole.y },
+    ].sort((a, b) => a.y - b.y);
+    actors.forEach(({ actor, kind }) => {
+      if (kind === "mole") drawWorldMole(ctx, actor);
+      else if (kind === "ally") drawWorldAlly(ctx, actor);
+      else drawWorldEnemy(ctx, actor);
+    });
+  }
+
+  function drawDecoration(ctx, decoration) {
+    ctx.save();
+    ctx.translate(decoration.x, decoration.y);
+    ctx.scale(decoration.size, decoration.size);
+    if (decoration.type === "tree") {
+      ctx.fillStyle = "rgba(44,51,35,.2)";
+      ctx.beginPath(); ctx.ellipse(4, 13, 18, 8, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#66543a"; ctx.fillRect(-3, -1, 7, 19);
+      ctx.fillStyle = decoration.tint > 0.5 ? "#345f3e" : "#3f7049";
+      [[0, -12, 17], [-12, -3, 13], [12, -2, 14]].forEach(([x, y, radius]) => {
+        ctx.beginPath(); ctx.arc(x, y, radius, 0, Math.PI * 2); ctx.fill();
+      });
+    } else if (decoration.type === "bush") {
+      ctx.fillStyle = decoration.tint > 0.5 ? "#527b4c" : "#456f43";
+      ctx.beginPath(); ctx.arc(-7, 0, 9, 0, Math.PI * 2); ctx.arc(4, -4, 12, 0, Math.PI * 2); ctx.arc(13, 3, 8, 0, Math.PI * 2); ctx.fill();
+    } else if (decoration.type === "rock") {
+      ctx.fillStyle = "#777c69"; ctx.beginPath(); ctx.ellipse(0, 2, 10, 7, -0.2, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = "rgba(255,255,255,.2)"; ctx.beginPath(); ctx.moveTo(-5, -1); ctx.lineTo(3, -3); ctx.stroke();
+    } else {
+      ctx.fillStyle = "#eee2bd"; ctx.fillRect(-1, 0, 3, 7);
+      ctx.fillStyle = decoration.tint > 0.5 ? "#d99758" : "#c45f4e"; ctx.beginPath(); ctx.arc(0, 0, 6, Math.PI, Math.PI * 2); ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  function drawDigSpot(ctx, spot) {
+    const pulse = 0.6 + Math.sin(world.time * 0.004 + spot.sparkle) * 0.25;
+    ctx.fillStyle = "rgba(75,55,35,.27)";
+    ctx.beginPath(); ctx.ellipse(spot.x, spot.y + 6, 17, 8, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = `rgba(255,225,120,${pulse})`;
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(spot.x, spot.y, 10 + pulse * 3, 0, Math.PI * 2); ctx.stroke();
+    ctx.fillStyle = "#f8df7b";
+    ctx.font = "bold 13px serif";
+    ctx.textAlign = "center";
+    ctx.fillText("✦", spot.x, spot.y + 4);
+  }
+
+  function drawWorldMole(ctx, mole) {
+    const digging = mole.phase === "dig" && mode === "digging";
+    const bob = digging ? Math.sin(world.time * 0.015) * 2 : Math.sin(world.time * 0.008) * 1.5;
+    ctx.save();
+    ctx.translate(mole.x, mole.y + bob);
+    ctx.scale(mole.facing, 1);
+    ctx.fillStyle = "rgba(31,39,33,.24)";
+    ctx.beginPath(); ctx.ellipse(0, 15, 20, 7, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#202724";
+    ctx.beginPath(); ctx.ellipse(-2, 1, 17, 21, -0.08, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#e1a39a";
+    ctx.beginPath(); ctx.arc(-13, -9, 6, 0, Math.PI * 2); ctx.arc(9, -10, 6, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#303834";
+    ctx.beginPath(); ctx.ellipse(2, -5, 17, 15, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#faf4d9";
+    ctx.beginPath(); ctx.arc(8, -8, 2.3, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#111714"; ctx.beginPath(); ctx.arc(8.7, -8, 1.1, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#e7a69c";
+    ctx.beginPath(); ctx.ellipse(18, -1, 6, 4.5, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.save();
+    ctx.translate(14, 6);
+    ctx.rotate(digging ? -0.7 + Math.sin(world.time * 0.018) * 0.65 : -0.45);
+    ctx.strokeStyle = "#6d4b2f"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(0, -2); ctx.lineTo(0, 20); ctx.stroke();
+    ctx.strokeStyle = "#c8c4ad"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(-8, -2); ctx.lineTo(8, -2); ctx.stroke();
+    ctx.restore();
+    ctx.scale(mole.facing, 1);
+    drawActorLabel(ctx, "栗团", 0, -31, "#f7f2d9");
+    ctx.restore();
+  }
+
+  function drawWorldAlly(ctx, ally) {
+    const isFirefly = ally.type === "firefly";
+    ctx.save();
+    ctx.translate(ally.x, ally.y);
+    if (isFirefly) {
+      const glow = ctx.createRadialGradient(0, 0, 1, 0, 0, 18);
+      glow.addColorStop(0, "rgba(255,242,125,.85)"); glow.addColorStop(1, "rgba(255,242,125,0)");
+      ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(0, 0, 18, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.fillStyle = "rgba(119,195,234,.75)";
+    ctx.beginPath(); ctx.arc(0, 1, isFirefly ? 8 : 17, 0, Math.PI * 2); ctx.fill();
+    ctx.font = `${isFirefly ? 13 : 24}px "Segoe UI Emoji"`;
+    ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(ally.emoji, 0, 0);
+    drawActorLabel(ctx, ally.name, 0, isFirefly ? -15 : -25, "#dff3ff");
+    ctx.restore();
+  }
+
+  function drawWorldEnemy(ctx, worldEnemy) {
+    ctx.save();
+    ctx.translate(worldEnemy.x, worldEnemy.y);
+    ctx.fillStyle = worldEnemy.state === "chase" ? "rgba(221,82,60,.42)" : "rgba(119,55,43,.25)";
+    ctx.beginPath(); ctx.arc(0, 2, 19, 0, Math.PI * 2); ctx.fill();
+    ctx.font = '27px "Segoe UI Emoji"';
+    ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(worldEnemy.template.emoji, 0, 0);
+    if (worldEnemy.state === "chase") {
+      ctx.fillStyle = "#fff3dc"; ctx.font = "bold 12px sans-serif"; ctx.fillText("!", 0, -25);
+    }
+    drawActorLabel(ctx, worldEnemy.template.name, 0, -31, "#ffe6df");
+    ctx.restore();
+  }
+
+  function drawActorLabel(ctx, text, x, y, color) {
+    ctx.save();
+    ctx.font = 'bold 8px "Noto Sans SC", sans-serif';
+    ctx.textAlign = "center";
+    const width = ctx.measureText(text).width + 10;
+    ctx.fillStyle = "rgba(24,43,31,.72)";
+    ctx.beginPath(); ctx.roundRect(x - width / 2, y - 8, width, 13, 5); ctx.fill();
+    ctx.fillStyle = color; ctx.fillText(text, x, y + 1);
+    ctx.restore();
   }
 
   function beep(frequency, duration) {
@@ -709,6 +1053,8 @@
     }
     state.activeZone = zone;
     state.actionProgress = 0;
+    spawnWorldEnemies();
+    chooseNextDigSpot();
     const names = ["旧树根", "萤火溪", "古树心"];
     document.querySelector(".expedition-card .section-heading h2").textContent = `苔影森林 · ${names[zone]}`;
     log(`前往新的探索区域：<b>${names[zone]}</b>。`);
@@ -767,8 +1113,9 @@
     if (mode === "battle") {
       elements.activityIcon.textContent = "⚔";
       elements.activityTitle.textContent = `正在与${enemy?.name || "野兽"}交战……`;
-      elements.activitySubtitle.textContent = state.autoBattle ? "栗团会自动挥爪反击" : "点击右侧按钮进行攻击";
+      elements.activitySubtitle.textContent = state.autoBattle ? "刺团队友正在协助攻击" : "点击右侧按钮，与刺团一起迎战";
       elements.timeLeft.textContent = "战斗中";
+      elements.aiState.textContent = "队伍协同作战";
       return;
     }
     if (state.paused) {
@@ -776,6 +1123,14 @@
       elements.activityTitle.textContent = "栗团坐下来擦了擦爪子";
       elements.activitySubtitle.textContent = "探索已暂停，进度会保留";
       elements.timeLeft.textContent = "暂停";
+      return;
+    }
+    if (world.mole.phase === "walk") {
+      elements.activityIcon.textContent = "🐾";
+      elements.activityTitle.textContent = "栗团正在寻找闪光宝点……";
+      elements.activitySubtitle.textContent = "队友自主跟随，敌人会巡逻和追击";
+      elements.timeLeft.textContent = "移动中";
+      elements.aiState.textContent = "AI 自动寻路";
       return;
     }
     elements.activityIcon.textContent = "⛏";
@@ -840,15 +1195,21 @@
   function loop(now) {
     const delta = Math.min(100, now - lastFrame);
     lastFrame = now;
+    updateWorld(delta);
 
     if (!state.paused) {
       if (mode === "digging") {
-        const speed = 1 + state.skills.digger * 0.1 + 0.08;
-        state.actionProgress += (delta / ACTION_BASE_MS) * speed;
-        if (state.actionProgress >= 1) completeDig();
-        const duration = ACTION_BASE_MS / speed;
-        elements.digBar.style.width = `${Math.min(100, state.actionProgress * 100)}%`;
-        elements.timeLeft.textContent = `${Math.max(0, ((1 - state.actionProgress) * duration) / 1000).toFixed(1)}s`;
+        if (world.mole.phase === "dig") {
+          const speed = 1 + state.skills.digger * 0.1 + 0.08;
+          state.actionProgress += (delta / ACTION_BASE_MS) * speed;
+          if (state.actionProgress >= 1) completeDig();
+          const duration = ACTION_BASE_MS / speed;
+          elements.digBar.style.width = `${Math.min(100, state.actionProgress * 100)}%`;
+          elements.timeLeft.textContent = `${Math.max(0, ((1 - state.actionProgress) * duration) / 1000).toFixed(1)}s`;
+        } else {
+          elements.digBar.style.width = "0%";
+          elements.timeLeft.textContent = "移动中";
+        }
       } else if (mode === "battle" && state.autoBattle) {
         battleTimer += delta;
         if (battleTimer >= 920) {
@@ -857,6 +1218,7 @@
         }
       }
     }
+    drawWorld();
 
     saveTimer += delta;
     if (saveTimer > 5000) {
@@ -944,6 +1306,7 @@
       if (event.target === elements.helpModal) elements.helpModal.classList.add("hidden");
     });
     window.addEventListener("beforeunload", saveState);
+    window.addEventListener("resize", resizeWorldCanvas);
     document.addEventListener("visibilitychange", () => {
       if (document.hidden) saveState();
       else lastFrame = performance.now();
@@ -962,6 +1325,7 @@
     applyOfflineProgress();
     if (!state.logs.length) log("栗团背起小包，第一次踏进了 <b>苔影森林</b>。");
     state.hp = Math.min(state.hp, maxHp());
+    initWorld();
     bindEvents();
     render();
     initLeaderboard();

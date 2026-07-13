@@ -84,7 +84,7 @@
             </div>
 
             <div class="profile-name">
-              <div><h2>栗团</h2><span>勤快的寻宝鼹鼠</span></div>
+              <div><h2>栗团</h2><span>黑绒寻宝鼹鼠</span></div>
               <span class="level-badge">Lv.<b id="level">1</b></span>
             </div>
 
@@ -120,28 +120,16 @@
             </div>
 
             <div class="forest-scene" id="forest-scene">
-              <div class="sun-rays"></div>
-              <div class="cloud cloud-one"></div>
-              <div class="cloud cloud-two"></div>
-              <div class="mountain far"></div>
-              <div class="mountain near"></div>
-              <div class="tree-line"></div>
-              <div class="ground">
-                <span class="grass g1"></span><span class="grass g2"></span><span class="grass g3"></span>
-                <span class="stone s1"></span><span class="stone s2"></span>
-                <span class="mushroom">♠</span>
+              <canvas id="world-canvas" aria-label="苔影森林方形探索地图"></canvas>
+              <div class="map-vignette"></div>
+              <div class="map-status">
+                <span><i class="legend-dot mole-dot"></i>栗团</span>
+                <span><i class="legend-dot ally-dot"></i>队友</span>
+                <span><i class="legend-dot enemy-dot"></i>敌人</span>
               </div>
-              <div class="tunnel tunnel-a"></div>
-              <div class="tunnel tunnel-b"></div>
-              <div class="buried-item item-one">?</div>
-              <div class="buried-item item-two">◆</div>
+              <div class="ai-state" id="ai-state">寻找宝藏中</div>
               <div class="dropped-pile hidden" id="dropped-pile" title="点击拾取掉落物">
                 <span>🎒</span><b>遗失物</b>
-              </div>
-              <div class="scene-mole" id="scene-mole">
-                <span class="mini-ear e1"></span><span class="mini-ear e2"></span>
-                <span class="mini-head"><i></i><b></b></span>
-                <span class="mini-body"></span><span class="mini-tool">⛏</span>
               </div>
               <div class="find-pop hidden" id="find-pop"></div>
             </div>
@@ -286,6 +274,8 @@
         <ul>
           <li><b>升级：</b>提升生命和基础属性，获得技能点。</li>
           <li><b>战斗：</b>遭遇怪物后自动进行；关闭自动战斗可手动迎战或绕开。</li>
+          <li><b>智能队友：</b>萤萤会跟随治疗，刺团会巡逻并在战斗中协助攻击。</li>
+          <li><b>方形地图：</b>栗团会自主寻找发光土堆，敌人也会巡逻、察觉并追击。</li>
           <li><b>战败：</b>背包中的部分物品会留在原地，恢复后点击地图上的遗失物即可取回。</li>
           <li><b>挂机：</b>关闭网页后也会积累最多 8 小时的离线收益。</li>
         </ul>

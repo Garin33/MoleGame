@@ -9,6 +9,8 @@
 ## 已实现
 
 - 自动探索、挖掘、经验升级与角色成长
+- Canvas 方形地图、黑色鼹鼠行走与挥铲动画
+- 敌人自主巡逻/追击，萤火虫与刺猬队友自主跟随/助战
 - 森林三区域及等级解锁
 - 随机材料、食物、稀有宝物和背包筛选
 - 随机怪物遭遇、自动/手动战斗与绕开危险
@@ -25,7 +27,7 @@
 ### 排行榜配置
 
 1. 在 Supabase 创建项目。
-2. 在 Authentication > Providers 中启用 Anonymous Sign-Ins。
+2. 在 Authentication > Settings 中启用 Anonymous Sign-Ins。
 3. 在 SQL Editor 执行 `supabase-setup.sql`。
 4. 将 Project URL 和 Publishable key（或 anon public key）填入 `config.js`。
 
