@@ -55,18 +55,36 @@
       <main>
         <section class="hero">
           <div>
-            <p class="eyebrow">第一章 · 苔影森林</p>
-            <h1>泥土之下，<em>万物皆有回响。</em></h1>
-            <p class="hero-copy">
+            <p class="eyebrow" id="map-chapter">第一章 · 苔影森林</p>
+            <h1 id="map-hero-title">泥土之下，<em>万物皆有回响。</em></h1>
+            <p class="hero-copy" id="map-hero-copy">
               小鼹鼠会自动探索、挖掘与成长。偶尔抬头看看它带回了什么，
               也别忘了为下一次冒险磨亮爪子。
             </p>
           </div>
           <div class="weather">
-            <span class="weather-icon">☀</span>
-            <div><strong>林间晴日</strong><small>挖掘速度 +8%</small></div>
+            <span class="weather-icon" id="weather-icon">☀</span>
+            <div><strong id="weather-name">林间晴日</strong><small id="weather-bonus">挖掘速度 +8%</small></div>
           </div>
         </section>
+
+        <nav class="map-selector" id="map-selector" aria-label="选择探索地图">
+          <button class="map-choice active" data-map="forest">
+            <span class="map-choice-art forest-art">🌲</span>
+            <span><small>第一站</small><strong>苔影森林</strong><em>古树与溪流</em></span>
+            <i>探索中</i>
+          </button>
+          <button class="map-choice" data-map="city">
+            <span class="map-choice-art city-art">🏙️</span>
+            <span><small>第二站</small><strong>齿轮城市</strong><em>街巷与地铁</em></span>
+            <i>前往</i>
+          </button>
+          <button class="map-choice" data-map="rainforest">
+            <span class="map-choice-art rainforest-art">🌴</span>
+            <span><small>第三站</small><strong>翡翠雨林</strong><em>藤蔓与遗迹</em></span>
+            <i>前往</i>
+          </button>
+        </nav>
 
         <section class="game-grid">
           <aside class="card profile-card">
@@ -114,7 +132,7 @@
             <div class="section-heading">
               <div>
                 <span class="overline">当前探索区域</span>
-                <h2>苔影森林 · 旧树根</h2>
+                <h2 id="current-zone-title">苔影森林 · 旧树根</h2>
               </div>
               <span class="depth-tag">深度 <b id="depth">1</b>m</span>
             </div>
@@ -147,13 +165,13 @@
             <div class="zone-route">
               <div class="route-line"><i id="route-line"></i></div>
               <button class="route-node active" data-zone="0">
-                <span>♣</span><b>旧树根</b><small>当前</small>
+                <span id="zone-icon-0">♣</span><b id="zone-name-0">旧树根</b><small>当前</small>
               </button>
               <button class="route-node locked" data-zone="1">
-                <span>♨</span><b>萤火溪</b><small>Lv. 5</small>
+                <span id="zone-icon-1">♨</span><b id="zone-name-1">萤火溪</b><small>Lv. 5</small>
               </button>
               <button class="route-node locked" data-zone="2">
-                <span>♜</span><b>古树心</b><small>Lv. 10</small>
+                <span id="zone-icon-2">♜</span><b id="zone-name-2">古树心</b><small>Lv. 10</small>
               </button>
             </div>
 
@@ -169,7 +187,7 @@
           <aside class="right-column">
             <section class="card event-card" id="event-card">
               <div class="section-heading compact">
-                <div><span class="overline">林间动静</span><h2 id="event-heading">旅途平静</h2></div>
+                <div><span class="overline" id="event-overline">林间动静</span><h2 id="event-heading">旅途平静</h2></div>
                 <span class="encounter-badge" id="event-badge">探索中</span>
               </div>
               <div class="encounter-visual" id="encounter-visual">
@@ -269,9 +287,10 @@
       <div class="modal-panel">
         <button class="modal-close" id="help-close" aria-label="关闭">×</button>
         <span class="modal-icon">🌰</span>
-        <h2 id="help-title">欢迎来到苔影森林</h2>
-        <p>栗团会自动挖掘，每次行动都能获得经验，并可能带回材料、宝物和食物。</p>
+        <h2 id="help-title">欢迎踏上鼹途</h2>
+        <p>在森林、城市和雨林间自由旅行。栗团会自动挖掘，并带回各地独有的材料与宝物。</p>
         <ul>
+          <li><b>地图选择：</b>点击顶部地图卡片即可启程，角色成长与背包会跨地图保留。</li>
           <li><b>升级：</b>提升生命和基础属性，获得技能点。</li>
           <li><b>战斗：</b>遭遇怪物后自动进行；关闭自动战斗可手动迎战或绕开。</li>
           <li><b>智能队友：</b>萤萤会跟随治疗，刺团会巡逻并在战斗中协助攻击。</li>

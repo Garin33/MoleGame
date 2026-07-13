@@ -15,6 +15,55 @@
     amber: { name: "凝露琥珀", icon: "🔶", type: "treasure", value: 16, rare: true },
     acornIdol: { name: "松果偶像", icon: "🏺", type: "treasure", value: 25, rare: true },
     feather: { name: "翠鸟羽", icon: "🪶", type: "treasure", value: 10 },
+    bolt: { name: "黄铜螺栓", icon: "🔩", type: "material", value: 3 },
+    copperWire: { name: "旧铜线圈", icon: "🧵", type: "material", value: 5 },
+    metroToken: { name: "地铁代币", icon: "🪙", type: "treasure", value: 12 },
+    neonChip: { name: "霓虹芯片", icon: "💾", type: "treasure", value: 28, rare: true },
+    cannedBerry: { name: "莓果罐头", icon: "🥫", type: "food", value: 7 },
+    giantLeaf: { name: "巨叶纤维", icon: "🍃", type: "material", value: 4 },
+    orchid: { name: "夜光兰", icon: "🌺", type: "material", value: 8 },
+    jungleFruit: { name: "雨林甜果", icon: "🥭", type: "food", value: 7 },
+    sunCrystal: { name: "太阳晶石", icon: "💎", type: "treasure", value: 30, rare: true },
+    relicMask: { name: "古老兽面", icon: "🎭", type: "treasure", value: 38, rare: true },
+  };
+
+  const MAPS = {
+    forest: {
+      name: "苔影森林",
+      chapter: "第一章 · 苔影森林",
+      title: "泥土之下，<em>万物皆有回响。</em>",
+      copy: "在古树与溪流之间寻找宝藏，小心森林居民守护的领地。",
+      weather: ["☀", "林间晴日", "挖掘速度 +8%"],
+      eventLabel: "林间动静",
+      zones: [["♣", "旧树根"], ["♨", "萤火溪"], ["♜", "古树心"]],
+      calm: ["🦋", "林间微风", "蝴蝶在光斑间飞舞，森林暂时没有危险。"],
+      palette: ["#8da977", "#789660", "#648354", "rgba(211,196,139,.22)"],
+      loot: ["acornIdol", "amber", "feather", "mushroom", "berry", "moss", "stone", "twig"],
+    },
+    city: {
+      name: "齿轮城市",
+      chapter: "第二章 · 齿轮城市",
+      title: "灯火之间，<em>废墟也会发光。</em>",
+      copy: "钻过街巷、工坊与废弃地铁，在城市地底收集被遗忘的机械宝物。",
+      weather: ["☁", "薄雾黄昏", "稀有材料 +6%"],
+      eventLabel: "街巷信号",
+      zones: [["▦", "旧钟街"], ["⚙", "齿轮坊"], ["▣", "末班地铁"]],
+      calm: ["🐦", "屋檐回声", "鸽群掠过旧钟楼，街巷暂时安静。"],
+      palette: ["#87999f", "#71858c", "#5d737b", "rgba(224,196,133,.2)"],
+      loot: ["neonChip", "metroToken", "feather", "cannedBerry", "copperWire", "bolt", "stone", "twig"],
+    },
+    rainforest: {
+      name: "翡翠雨林",
+      chapter: "第三章 · 翡翠雨林",
+      title: "雨幕深处，<em>遗迹仍在呼吸。</em>",
+      copy: "沿着藤蔓深入潮湿雨林，在巨叶和古老遗迹下寻找失落文明的珍宝。",
+      weather: ["☂", "温暖阵雨", "宝物经验 +10%"],
+      eventLabel: "雨幕异响",
+      zones: [["❧", "巨叶谷"], ["≈", "月虹瀑"], ["◈", "太阳遗迹"]],
+      calm: ["🦜", "雨声渐远", "彩羽鸟停在藤蔓上，雨林恢复了片刻平静。"],
+      palette: ["#5f9b6d", "#438058", "#2f6747", "rgba(191,166,91,.2)"],
+      loot: ["relicMask", "sunCrystal", "orchid", "jungleFruit", "giantLeaf", "moss", "stone", "twig"],
+    },
   };
 
   const SKILLS = {
@@ -39,10 +88,18 @@
   };
 
   const ENEMIES = [
-    { name: "尖牙野鼠", emoji: "🐀", hp: 28, attack: 5, xp: 15, coins: 8 },
-    { name: "护巢黄蜂", emoji: "🐝", hp: 22, attack: 6, xp: 13, coins: 7 },
-    { name: "林地獾", emoji: "🦡", hp: 42, attack: 8, xp: 22, coins: 12, minLevel: 3 },
-    { name: "迷路野猪", emoji: "🐗", hp: 58, attack: 10, xp: 30, coins: 18, minLevel: 5 },
+    { map: "forest", name: "尖牙野鼠", emoji: "🐀", hp: 28, attack: 5, xp: 15, coins: 8 },
+    { map: "forest", name: "护巢黄蜂", emoji: "🐝", hp: 22, attack: 6, xp: 13, coins: 7 },
+    { map: "forest", name: "林地獾", emoji: "🦡", hp: 42, attack: 8, xp: 22, coins: 12, minLevel: 3 },
+    { map: "forest", name: "迷路野猪", emoji: "🐗", hp: 58, attack: 10, xp: 30, coins: 18, minLevel: 5 },
+    { map: "city", name: "下水道鼠王", emoji: "🐀", hp: 32, attack: 6, xp: 17, coins: 10 },
+    { map: "city", name: "失控清扫机", emoji: "🤖", hp: 38, attack: 7, xp: 21, coins: 13 },
+    { map: "city", name: "护院恶犬", emoji: "🐕", hp: 52, attack: 9, xp: 27, coins: 17, minLevel: 3 },
+    { map: "city", name: "地铁蝙蝠", emoji: "🦇", hp: 45, attack: 10, xp: 29, coins: 19, minLevel: 5 },
+    { map: "rainforest", name: "箭毒蛙", emoji: "🐸", hp: 34, attack: 7, xp: 19, coins: 11 },
+    { map: "rainforest", name: "藤冠巨蟒", emoji: "🐍", hp: 48, attack: 9, xp: 26, coins: 16 },
+    { map: "rainforest", name: "遗迹猕猴", emoji: "🐒", hp: 44, attack: 8, xp: 24, coins: 15, minLevel: 3 },
+    { map: "rainforest", name: "雨林猎豹", emoji: "🐆", hp: 66, attack: 12, xp: 36, coins: 24, minLevel: 5 },
   ];
 
   const defaultState = {
@@ -69,6 +126,7 @@
     totalDigs: 0,
     sound: true,
     playerName: "栗团",
+    activeMap: "forest",
   };
 
   let state = loadState();
@@ -113,6 +171,14 @@
     hpBar: $("hp-bar"),
     upgradeCost: $("upgrade-cost"),
     depth: $("depth"),
+    mapChapter: $("map-chapter"),
+    mapHeroTitle: $("map-hero-title"),
+    mapHeroCopy: $("map-hero-copy"),
+    weatherIcon: $("weather-icon"),
+    weatherName: $("weather-name"),
+    weatherBonus: $("weather-bonus"),
+    currentZoneTitle: $("current-zone-title"),
+    eventOverline: $("event-overline"),
     activityIcon: $("activity-icon"),
     activityTitle: $("activity-title"),
     activitySubtitle: $("activity-subtitle"),
@@ -398,15 +464,16 @@
     const zoneBonus = state.activeZone * 0.07;
     const rareChance = 0.035 + totalLuck() * 0.003 + zoneBonus;
     const roll = Math.random();
+    const pool = MAPS[state.activeMap].loot;
     let id;
-    if (roll < rareChance * 0.35) id = "acornIdol";
-    else if (roll < rareChance) id = "amber";
-    else if (roll < 0.18 + zoneBonus) id = "feather";
-    else if (roll < 0.36) id = "mushroom";
-    else if (roll < 0.52) id = "berry";
-    else if (roll < 0.72) id = "moss";
-    else if (roll < 0.87) id = "stone";
-    else id = "twig";
+    if (roll < rareChance * 0.35) id = pool[0];
+    else if (roll < rareChance) id = pool[1];
+    else if (roll < 0.18 + zoneBonus) id = pool[2];
+    else if (roll < 0.36) id = pool[3];
+    else if (roll < 0.52) id = pool[4];
+    else if (roll < 0.72) id = pool[5];
+    else if (roll < 0.87) id = pool[6];
+    else id = pool[7];
     addItem(id, 1, offline);
     return id;
   }
@@ -426,18 +493,26 @@
     if (Math.random() < 0.09) {
       const heal = Math.min(maxHp() - state.hp, 8 + Math.floor(Math.random() * 8));
       if (heal > 0) {
+        const friends = {
+          forest: ["🐿️", "友善的花栗鼠", "花栗鼠从树杈上丢来一把新鲜莓果"],
+          city: ["🐈", "屋顶流浪猫", "流浪猫领着栗团找到了一罐完好的食物"],
+          rainforest: ["🦥", "慢吞吞的树懒", "树懒分享了一枚香甜的雨林果实"],
+        };
+        const [friendEmoji, friendName, friendStory] = friends[state.activeMap];
         state.hp += heal;
-        log(`遇见友善的 <b>花栗鼠</b>，分享莓果恢复了 ${heal} 点活力。`);
-        showCalmEvent("🐿️", "友善的花栗鼠", `它从树杈上丢来一把新鲜莓果，恢复了 ${heal} 点活力。`);
+        log(`遇见了 <b>${friendName}</b>，恢复了 ${heal} 点活力。`);
+        showCalmEvent(friendEmoji, friendName, `${friendStory}，恢复了 ${heal} 点活力。`);
       }
     } else {
-      showCalmEvent("🦋", "旅途平静", "蝴蝶在光斑间飞舞，苔影森林暂时没有危险。");
+      showCalmEvent(...MAPS[state.activeMap].calm);
     }
     render();
   }
 
   function availableEnemies() {
-    return ENEMIES.filter((candidate) => !candidate.minLevel || state.level >= candidate.minLevel);
+    return ENEMIES.filter(
+      (candidate) => candidate.map === state.activeMap && (!candidate.minLevel || state.level >= candidate.minLevel),
+    );
   }
 
   function startEncounter(encounterTemplate = null) {
@@ -693,6 +768,11 @@
 
   function initWorld() {
     worldContext = elements.worldCanvas.getContext("2d");
+    resetWorldMap();
+    resizeWorldCanvas();
+  }
+
+  function resetWorldMap() {
     world.decorations = Array.from({ length: 54 }, (_, index) => {
       const point = randomWorldPoint(18);
       return {
@@ -709,7 +789,6 @@
     }));
     spawnWorldEnemies();
     chooseNextDigSpot();
-    resizeWorldCanvas();
   }
 
   function resizeWorldCanvas() {
@@ -859,12 +938,13 @@
   function drawWorld() {
     if (!worldContext) return;
     const ctx = worldContext;
+    const map = MAPS[state.activeMap];
     ctx.clearRect(0, 0, WORLD_SIZE, WORLD_SIZE);
 
     const ground = ctx.createLinearGradient(0, 0, WORLD_SIZE, WORLD_SIZE);
-    ground.addColorStop(0, "#8da977");
-    ground.addColorStop(0.55, "#789660");
-    ground.addColorStop(1, "#648354");
+    ground.addColorStop(0, map.palette[0]);
+    ground.addColorStop(0.55, map.palette[1]);
+    ground.addColorStop(1, map.palette[2]);
     ctx.fillStyle = ground;
     ctx.fillRect(0, 0, WORLD_SIZE, WORLD_SIZE);
 
@@ -879,14 +959,33 @@
     }
 
     ctx.save();
-    ctx.strokeStyle = "rgba(211,196,139,.22)";
-    ctx.lineWidth = 30;
+    ctx.strokeStyle = map.palette[3];
     ctx.lineCap = "round";
-    ctx.beginPath();
-    ctx.moveTo(-15, 360);
-    ctx.bezierCurveTo(115, 300, 155, 390, 265, 300);
-    ctx.bezierCurveTo(355, 225, 430, 265, 545, 180);
-    ctx.stroke();
+    if (state.activeMap === "city") {
+      ctx.lineWidth = 48;
+      [[-10, 150, 530, 150], [165, -10, 165, 530], [-10, 405, 530, 405]].forEach(([x1, y1, x2, y2]) => {
+        ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+      });
+      ctx.strokeStyle = "rgba(245,220,151,.18)";
+      ctx.lineWidth = 2;
+      ctx.setLineDash([12, 13]);
+      [[0, 150, 520, 150], [165, 0, 165, 520], [0, 405, 520, 405]].forEach(([x1, y1, x2, y2]) => {
+        ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+      });
+      ctx.setLineDash([]);
+    } else {
+      ctx.lineWidth = state.activeMap === "rainforest" ? 38 : 30;
+      ctx.beginPath();
+      ctx.moveTo(-15, 360);
+      ctx.bezierCurveTo(115, 300, 155, 390, 265, 300);
+      ctx.bezierCurveTo(355, 225, 430, 265, 545, 180);
+      ctx.stroke();
+      if (state.activeMap === "rainforest") {
+        ctx.strokeStyle = "rgba(95,196,191,.28)";
+        ctx.lineWidth = 12;
+        ctx.stroke();
+      }
+    }
     ctx.restore();
 
     world.decorations.forEach((decoration) => drawDecoration(ctx, decoration));
@@ -908,6 +1007,49 @@
     ctx.save();
     ctx.translate(decoration.x, decoration.y);
     ctx.scale(decoration.size, decoration.size);
+    if (state.activeMap === "city") {
+      if (decoration.type === "tree") {
+        ctx.fillStyle = "rgba(41,51,56,.2)"; ctx.fillRect(-14, 9, 28, 7);
+        ctx.fillStyle = decoration.tint > 0.5 ? "#5f6b70" : "#68777c"; ctx.fillRect(-12, -12, 24, 22);
+        ctx.fillStyle = "rgba(220,231,229,.22)"; ctx.fillRect(-8, -8, 6, 6); ctx.fillRect(3, -8, 6, 6);
+        ctx.fillStyle = "#424d51"; ctx.fillRect(-15, 8, 30, 4);
+      } else if (decoration.type === "bush") {
+        ctx.fillStyle = "#46565b"; ctx.fillRect(-2, -12, 4, 24);
+        ctx.fillStyle = "#e0c46a"; ctx.beginPath(); ctx.arc(0, -13, 5, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "rgba(255,231,131,.18)"; ctx.beginPath(); ctx.arc(0, -13, 12, 0, Math.PI * 2); ctx.fill();
+      } else if (decoration.type === "rock") {
+        ctx.fillStyle = "#756854"; ctx.fillRect(-10, -7, 20, 15);
+        ctx.strokeStyle = "#9e8d6e"; ctx.strokeRect(-10, -7, 20, 15);
+        ctx.fillStyle = "#4d4539"; ctx.fillRect(-2, -7, 3, 15);
+      } else {
+        ctx.fillStyle = "#6b7f87"; ctx.beginPath(); ctx.ellipse(0, 2, 13, 6, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = "rgba(194,225,231,.35)"; ctx.beginPath(); ctx.arc(0, 0, 7, 0, Math.PI); ctx.stroke();
+      }
+      ctx.restore();
+      return;
+    }
+    if (state.activeMap === "rainforest") {
+      if (decoration.type === "tree") {
+        ctx.fillStyle = "#4d3e2c"; ctx.fillRect(-4, -4, 8, 24);
+        ctx.fillStyle = decoration.tint > 0.5 ? "#176443" : "#28784c";
+        [[0, -12, 19], [-14, -2, 13], [14, -3, 14]].forEach(([x, y, radius]) => {
+          ctx.beginPath(); ctx.arc(x, y, radius, 0, Math.PI * 2); ctx.fill();
+        });
+        ctx.strokeStyle = "#5d9b55"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(8, 5, 14, 0, Math.PI); ctx.stroke();
+      } else if (decoration.type === "bush") {
+        ctx.fillStyle = "#2e8b53"; ctx.beginPath(); ctx.ellipse(-6, 0, 8, 18, -0.7, 0, Math.PI * 2); ctx.ellipse(7, 0, 8, 18, 0.7, 0, Math.PI * 2); ctx.fill();
+      } else if (decoration.type === "rock") {
+        ctx.fillStyle = "#667b62"; ctx.beginPath(); ctx.ellipse(0, 2, 11, 8, -0.2, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "#4d9a58"; ctx.beginPath(); ctx.arc(-3, -3, 5, 0, Math.PI * 2); ctx.fill();
+      } else {
+        ctx.fillStyle = decoration.tint > 0.5 ? "#ef7698" : "#f3bf58";
+        for (let angle = 0; angle < Math.PI * 2; angle += Math.PI / 3) {
+          ctx.beginPath(); ctx.ellipse(Math.cos(angle) * 5, Math.sin(angle) * 5, 3, 6, angle, 0, Math.PI * 2); ctx.fill();
+        }
+      }
+      ctx.restore();
+      return;
+    }
     if (decoration.type === "tree") {
       ctx.fillStyle = "rgba(44,51,35,.2)";
       ctx.beginPath(); ctx.ellipse(4, 13, 18, 8, 0, 0, Math.PI * 2); ctx.fill();
@@ -1041,6 +1183,49 @@
     });
   }
 
+  function applyMapUI() {
+    const map = MAPS[state.activeMap];
+    document.body.dataset.map = state.activeMap;
+    elements.mapChapter.textContent = map.chapter;
+    elements.mapHeroTitle.innerHTML = map.title;
+    elements.mapHeroCopy.textContent = map.copy;
+    [elements.weatherIcon.textContent, elements.weatherName.textContent, elements.weatherBonus.textContent] = map.weather;
+    elements.eventOverline.textContent = map.eventLabel;
+    elements.currentZoneTitle.textContent = `${map.name} · ${map.zones[state.activeZone][1]}`;
+    elements.worldCanvas.setAttribute("aria-label", `${map.name}方形探索地图`);
+    map.zones.forEach(([icon, name], index) => {
+      $(`zone-icon-${index}`).textContent = icon;
+      $(`zone-name-${index}`).textContent = name;
+    });
+    document.querySelectorAll(".map-choice").forEach((button) => {
+      const active = button.dataset.map === state.activeMap;
+      button.classList.toggle("active", active);
+      button.querySelector("i").textContent = active ? "探索中" : "前往";
+    });
+  }
+
+  function selectMap(mapId) {
+    if (!MAPS[mapId] || mapId === state.activeMap) return;
+    if (mode === "battle") {
+      toast("战斗结束后才能更换地图", "red");
+      return;
+    }
+    state.activeMap = mapId;
+    state.activeZone = 0;
+    state.actionProgress = 0;
+    const currentUrl = new URL(window.location.href);
+    currentUrl.searchParams.set("map", mapId);
+    window.history.replaceState({}, "", currentUrl);
+    resetWorldMap();
+    applyMapUI();
+    const map = MAPS[mapId];
+    showCalmEvent(...map.calm);
+    log(`启程前往新地图：<b>${map.name}</b>。`);
+    toast(`已抵达 ${map.name}`, "gold");
+    render();
+    saveState();
+  }
+
   function selectZone(zone) {
     const needed = zone === 1 ? 5 : zone === 2 ? 10 : 1;
     if (state.level < needed) {
@@ -1055,9 +1240,9 @@
     state.actionProgress = 0;
     spawnWorldEnemies();
     chooseNextDigSpot();
-    const names = ["旧树根", "萤火溪", "古树心"];
-    document.querySelector(".expedition-card .section-heading h2").textContent = `苔影森林 · ${names[zone]}`;
-    log(`前往新的探索区域：<b>${names[zone]}</b>。`);
+    const map = MAPS[state.activeMap];
+    elements.currentZoneTitle.textContent = `${map.name} · ${map.zones[zone][1]}`;
+    log(`前往新的探索区域：<b>${map.zones[zone][1]}</b>。`);
     render();
   }
 
@@ -1135,7 +1320,12 @@
     }
     elements.activityIcon.textContent = "⛏";
     elements.activityTitle.textContent = "正在挖掘松软泥土……";
-    elements.activitySubtitle.textContent = ["可能发现普通材料或松果币", "溪水附近藏着闪亮的东西", "古树深处稀有宝物更多"][state.activeZone];
+    const mapTips = {
+      forest: ["可能发现普通材料或松果币", "溪水附近藏着闪亮的东西", "古树深处稀有宝物更多"],
+      city: ["翻找街角遗落的旧物", "机械工坊里有珍贵零件", "末班地铁深处信号闪烁"],
+      rainforest: ["巨叶下常有新鲜果实", "瀑布附近会冲出晶石", "遗迹深处藏着古老宝物"],
+    };
+    elements.activitySubtitle.textContent = mapTips[state.activeMap][state.activeZone];
   }
 
   function renderBattle() {
@@ -1150,6 +1340,7 @@
   function render() {
     const needed = xpNeeded();
     const hpMax = maxHp();
+    applyMapUI();
     elements.coins.textContent = formatNumber(state.coins);
     elements.sprouts.textContent = formatNumber(state.sprouts);
     elements.headerHp.textContent = `${state.hp} / ${hpMax}`;
@@ -1274,6 +1465,10 @@
       document.querySelectorAll("[data-filter]").forEach((node) => node.classList.toggle("active", node === button));
       renderInventory();
     });
+    $("map-selector").addEventListener("click", (event) => {
+      const button = event.target.closest("[data-map]");
+      if (button) selectMap(button.dataset.map);
+    });
     document.querySelectorAll(".route-node").forEach((node) => {
       node.addEventListener("click", () => selectZone(Number(node.dataset.zone)));
     });
@@ -1322,6 +1517,9 @@
   }
 
   function init() {
+    const requestedMap = new URLSearchParams(window.location.search).get("map");
+    if (MAPS[requestedMap]) state.activeMap = requestedMap;
+    if (!MAPS[state.activeMap]) state.activeMap = "forest";
     applyOfflineProgress();
     if (!state.logs.length) log("栗团背起小包，第一次踏进了 <b>苔影森林</b>。");
     state.hp = Math.min(state.hp, maxHp());
