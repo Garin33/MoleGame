@@ -33,8 +33,13 @@
       chapter: "第一章 · 苔影森林",
       title: "泥土之下，<em>万物皆有回响。</em>",
       copy: "在古树与溪流之间寻找宝藏，小心森林居民守护的领地。",
-      weather: ["☀", "林间晴日", "挖掘速度 +8%"],
+      weather: ["☀", "林间晴日", "基础奖励 ×1.0"],
       eventLabel: "林间动静",
+      difficulty: 1,
+      enemyScale: 1,
+      rewardScale: 1,
+      rareBonus: 0,
+      eventChance: 0.14,
       zones: [["♣", "旧树根"], ["♨", "萤火溪"], ["♜", "古树心"]],
       calm: ["🦋", "林间微风", "蝴蝶在光斑间飞舞，森林暂时没有危险。"],
       palette: ["#8da977", "#789660", "#648354", "rgba(211,196,139,.22)"],
@@ -45,8 +50,13 @@
       chapter: "第二章 · 齿轮城市",
       title: "灯火之间，<em>废墟也会发光。</em>",
       copy: "钻过街巷、工坊与废弃地铁，在城市地底收集被遗忘的机械宝物。",
-      weather: ["☁", "薄雾黄昏", "稀有材料 +6%"],
+      weather: ["☁", "薄雾黄昏", "探索奖励 ×1.4"],
       eventLabel: "街巷信号",
+      difficulty: 2,
+      enemyScale: 1.28,
+      rewardScale: 1.4,
+      rareBonus: 0.025,
+      eventChance: 0.19,
       zones: [["▦", "旧钟街"], ["⚙", "齿轮坊"], ["▣", "末班地铁"]],
       calm: ["🐦", "屋檐回声", "鸽群掠过旧钟楼，街巷暂时安静。"],
       palette: ["#87999f", "#71858c", "#5d737b", "rgba(224,196,133,.2)"],
@@ -57,8 +67,13 @@
       chapter: "第三章 · 翡翠雨林",
       title: "雨幕深处，<em>遗迹仍在呼吸。</em>",
       copy: "沿着藤蔓深入潮湿雨林，在巨叶和古老遗迹下寻找失落文明的珍宝。",
-      weather: ["☂", "温暖阵雨", "宝物经验 +10%"],
+      weather: ["☂", "温暖阵雨", "探索奖励 ×1.9"],
       eventLabel: "雨幕异响",
+      difficulty: 3,
+      enemyScale: 1.62,
+      rewardScale: 1.9,
+      rareBonus: 0.055,
+      eventChance: 0.25,
       zones: [["❧", "巨叶谷"], ["≈", "月虹瀑"], ["◈", "太阳遗迹"]],
       calm: ["🦜", "雨声渐远", "彩羽鸟停在藤蔓上，雨林恢复了片刻平静。"],
       palette: ["#5f9b6d", "#438058", "#2f6747", "rgba(191,166,91,.2)"],
@@ -462,7 +477,8 @@
 
   function rollLoot(offline = false) {
     const zoneBonus = state.activeZone * 0.07;
-    const rareChance = 0.035 + totalLuck() * 0.003 + zoneBonus;
+    const map = MAPS[state.activeMap];
+    const rareChance = 0.035 + totalLuck() * 0.003 + zoneBonus + map.rareBonus;
     const roll = Math.random();
     const pool = MAPS[state.activeMap].loot;
     let id;
@@ -478,33 +494,116 @@
     return id;
   }
 
+  function triggerMapEvent() {
+    const map = MAPS[state.activeMap];
+    if (Math.random() >= map.eventChance) return false;
+    const eventIndex = Math.floor(Math.random() * 4);
+    const scaled = (value) => Math.round(value * map.rewardScale);
+
+    if (state.activeMap === "forest") {
+      if (eventIndex === 0) {
+        const reward = scaled(10 + Math.floor(Math.random() * 7));
+        state.coins += reward;
+        showCalmEvent("🪵", "空心树桩", `树桩暗格里藏着松鼠的收藏，获得 ${reward} 枚松果币。`);
+        log(`发现 <b>空心树桩</b>，额外获得 ${reward} 枚松果币。`);
+      } else if (eventIndex === 1) {
+        const heal = Math.min(maxHp() - state.hp, 14);
+        state.hp += heal;
+        showCalmEvent("💧", "月光泉眼", `清凉泉水恢复了 ${heal} 点活力。`);
+        log(`<b>月光泉眼</b>让栗团恢复了 ${heal} 点活力。`);
+      } else if (eventIndex === 2) {
+        addItem("berry", 2);
+        showCalmEvent("🫐", "莓果灌木", "队伍找到一片成熟莓果，获得林间莓果 ×2。");
+        log(`随机事件：采集了 <b>林间莓果 ×2</b>。`);
+      } else {
+        const ambusher = availableEnemies().find((candidate) => candidate.name === "护巢黄蜂");
+        showCalmEvent("🐝", "误碰蜂巢", "树枝剧烈摇晃，护巢黄蜂冲了出来！");
+        log(`随机事件：不小心惊动了 <b>护巢黄蜂</b>。`);
+        startEncounter(ambusher);
+      }
+    } else if (state.activeMap === "city") {
+      if (eventIndex === 0) {
+        const reward = scaled(18 + Math.floor(Math.random() * 12));
+        state.coins += reward;
+        showCalmEvent("🔐", "废弃储物柜", `生锈柜门后藏着一袋旧币，获得 ${reward} 枚松果币。`);
+        log(`撬开 <b>废弃储物柜</b>，获得 ${reward} 枚松果币。`);
+      } else if (eventIndex === 1) {
+        addItem("cannedBerry", 1);
+        state.hp = Math.min(maxHp(), state.hp + 7);
+        showCalmEvent("🥫", "仍在运转的售货机", "售货机咔哒一声，掉出一罐莓果罐头并恢复 7 点活力。");
+        log(`随机事件：售货机送出了 <b>莓果罐头</b>。`);
+      } else if (eventIndex === 2) {
+        const damage = 7;
+        state.hp = Math.max(1, state.hp - damage);
+        addItem(Math.random() < 0.45 ? "neonChip" : "copperWire", 1);
+        showCalmEvent("⚡", "短路的配电箱", `栗团被电得毛发竖起，损失 ${damage} 点活力，但取出了珍贵零件。`);
+        log(`冒险拆开 <b>配电箱</b>，损失 ${damage} 活力并获得零件。`);
+      } else {
+        const ambusher = availableEnemies().find((candidate) => candidate.name === "失控清扫机");
+        showCalmEvent("🚨", "警报误触", "红灯闪烁，失控清扫机锁定了栗团！");
+        log(`随机事件：城市警报引来了 <b>失控清扫机</b>。`);
+        startEncounter(ambusher);
+      }
+    } else if (eventIndex === 0) {
+      const xpReward = scaled(24);
+      addXp(xpReward);
+      state.sprouts += 1;
+      showCalmEvent("🗿", "低语图腾", `古老图腾传来回响，获得 ${xpReward} 经验与 1 枚嫩芽。`);
+      log(`聆听 <b>低语图腾</b>，获得 ${xpReward} 经验和 1 枚嫩芽。`);
+    } else if (eventIndex === 1) {
+      const damage = 12;
+      state.hp = Math.max(1, state.hp - damage);
+      addItem("sunCrystal", 1);
+      showCalmEvent("🌊", "突发山洪", `队伍损失 ${damage} 点活力，却在退水后发现了太阳晶石。`);
+      log(`经历 <b>突发山洪</b>，带回一枚珍贵太阳晶石。`);
+    } else if (eventIndex === 2) {
+      const reward = scaled(28);
+      state.coins += reward;
+      addItem("relicMask", 1);
+      showCalmEvent("🏛️", "隐秘祭坛", `藤蔓后的祭坛保存完好，获得古老兽面与 ${reward} 枚松果币。`);
+      log(`发现 <b>隐秘祭坛</b>，取得古老兽面和 ${reward} 枚松果币。`);
+    } else {
+      const ambusher = availableEnemies().find((candidate) => candidate.name === "藤冠巨蟒");
+      showCalmEvent("🐍", "藤蔓苏醒", "眼前的藤蔓突然睁开双眼——那是一条藤冠巨蟒！");
+      log(`随机事件：遭到 <b>藤冠巨蟒</b>伏击。`);
+      startEncounter(ambusher);
+    }
+
+    toast(`${map.name} · 随机事件`, eventIndex === 3 ? "red" : "gold");
+    return true;
+  }
+
   function completeDig() {
+    const map = MAPS[state.activeMap];
     state.totalDigs += 1;
     state.depth += 1 + state.activeZone;
-    const coins = 2 + Math.floor(Math.random() * (4 + state.activeZone * 2));
+    const coins = Math.round((2 + Math.floor(Math.random() * (4 + state.activeZone * 2))) * map.rewardScale);
     state.coins += coins;
-    addXp(5 + state.activeZone * 2);
+    addXp(Math.round((5 + state.activeZone * 2) * map.rewardScale));
     const itemId = rollLoot();
     log(`在 ${state.depth}m 处挖到 <b>${ITEMS[itemId].name}</b>，还有 ${coins} 枚松果币。`);
     beep(430, 0.06);
     state.actionProgress = 0;
     finishWorldDig();
 
-    if (Math.random() < 0.09) {
-      const heal = Math.min(maxHp() - state.hp, 8 + Math.floor(Math.random() * 8));
-      if (heal > 0) {
+    const eventTriggered = triggerMapEvent();
+    if (!eventTriggered) {
+      if (Math.random() < 0.09) {
+        const heal = Math.min(maxHp() - state.hp, 8 + Math.floor(Math.random() * 8));
         const friends = {
           forest: ["🐿️", "友善的花栗鼠", "花栗鼠从树杈上丢来一把新鲜莓果"],
           city: ["🐈", "屋顶流浪猫", "流浪猫领着栗团找到了一罐完好的食物"],
           rainforest: ["🦥", "慢吞吞的树懒", "树懒分享了一枚香甜的雨林果实"],
         };
-        const [friendEmoji, friendName, friendStory] = friends[state.activeMap];
-        state.hp += heal;
-        log(`遇见了 <b>${friendName}</b>，恢复了 ${heal} 点活力。`);
-        showCalmEvent(friendEmoji, friendName, `${friendStory}，恢复了 ${heal} 点活力。`);
+        if (heal > 0) {
+          const [friendEmoji, friendName, friendStory] = friends[state.activeMap];
+          state.hp += heal;
+          log(`遇见了 <b>${friendName}</b>，恢复了 ${heal} 点活力。`);
+          showCalmEvent(friendEmoji, friendName, `${friendStory}，恢复了 ${heal} 点活力。`);
+        }
+      } else {
+        showCalmEvent(...MAPS[state.activeMap].calm);
       }
-    } else {
-      showCalmEvent(...MAPS[state.activeMap].calm);
     }
     render();
   }
@@ -518,12 +617,13 @@
   function startEncounter(encounterTemplate = null) {
     const templates = availableEnemies();
     const base = encounterTemplate || templates[Math.floor(Math.random() * templates.length)];
-    const scale = 1 + state.activeZone * 0.3 + Math.max(0, state.level - 1) * 0.07;
+    const map = MAPS[state.activeMap];
+    const scale = map.enemyScale * (1 + state.activeZone * 0.3 + Math.max(0, state.level - 1) * 0.07);
     enemy = {
       ...base,
       maxHp: Math.round(base.hp * scale),
       currentHp: Math.round(base.hp * scale),
-      attack: Math.round(base.attack * (1 + state.activeZone * 0.2)),
+      attack: Math.round(base.attack * map.enemyScale * (1 + state.activeZone * 0.2)),
     };
     mode = "battle";
     battleTimer = 0;
@@ -569,14 +669,17 @@
 
   function winBattle() {
     const defeated = enemy;
-    state.coins += defeated.coins;
-    addXp(defeated.xp);
-    if (Math.random() < 0.4) rollLoot();
-    log(`赶跑了 <b>${defeated.name}</b>，获得 ${defeated.xp} 经验与 ${defeated.coins} 枚松果币。`);
-    toast(`战斗胜利 · +${defeated.xp} 经验`, "gold");
+    const rewardScale = MAPS[state.activeMap].rewardScale;
+    const coinReward = Math.round(defeated.coins * rewardScale);
+    const xpReward = Math.round(defeated.xp * rewardScale);
+    state.coins += coinReward;
+    addXp(xpReward);
+    if (Math.random() < 0.35 + MAPS[state.activeMap].difficulty * 0.1) rollLoot();
+    log(`赶跑了 <b>${defeated.name}</b>，获得 ${xpReward} 经验与 ${coinReward} 枚松果币。`);
+    toast(`战斗胜利 · +${xpReward} 经验`, "gold");
     beep(720, 0.12);
     endBattle();
-    showCalmEvent("🦋", "继续前进", "危险已经解除，栗团拍掉泥土，重新开始挖掘。");
+    showCalmEvent(...MAPS[state.activeMap].calm);
   }
 
   function loseBattle() {
