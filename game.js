@@ -1020,7 +1020,7 @@
   function initWorld() {
     worldContext = elements.worldCanvas.getContext("2d");
     xiaoheiImage = new Image();
-    xiaoheiImage.src = "./xiaohei.png";
+    xiaoheiImage.src = "./xiaohei-avatar.png";
     resetWorldMap();
     resizeWorldCanvas();
   }
@@ -1397,9 +1397,9 @@
     if (xiaoheiImage?.complete && xiaoheiImage.naturalWidth) {
       ctx.save();
       ctx.beginPath(); ctx.arc(0, -9, 21, 0, Math.PI * 2); ctx.clip();
-      const sourceSize = Math.min(xiaoheiImage.naturalWidth, xiaoheiImage.naturalHeight * 0.62);
+      const sourceSize = xiaoheiImage.naturalWidth * 0.72;
       const sourceX = (xiaoheiImage.naturalWidth - sourceSize) / 2;
-      const sourceY = xiaoheiImage.naturalHeight * 0.17;
+      const sourceY = xiaoheiImage.naturalHeight * 0.18;
       ctx.drawImage(xiaoheiImage, sourceX, sourceY, sourceSize, sourceSize, -22, -31, 44, 44);
       ctx.restore();
       ctx.strokeStyle = "#d6b35f"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, -9, 22, 0, Math.PI * 2); ctx.stroke();
