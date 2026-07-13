@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#173c2c" />
+    <meta
+      name="description"
+      content="《鼹途》是一款森林主题的网页挂机挖宝游戏。"
+    />
+    <title>鼹途 · 森林挖宝记</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Sans+SC:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="ambient ambient-one"></div>
+    <div class="ambient ambient-two"></div>
+
+    <div class="game-shell">
+      <header class="topbar">
+        <a class="brand" href="#" aria-label="返回游戏顶部">
+          <span class="brand-mark">⛏</span>
+          <span>
+            <strong>鼹途</strong>
+            <small>森林挖宝记</small>
+          </span>
+        </a>
+
+        <div class="resource-strip" aria-label="角色资源">
+          <div class="resource">
+            <span class="resource-icon amber">◆</span>
+            <span><small>松果币</small><strong id="coins">0</strong></span>
+          </div>
+          <div class="resource">
+            <span class="resource-icon green">✦</span>
+            <span><small>嫩芽</small><strong id="sprouts">0</strong></span>
+          </div>
+          <div class="resource">
+            <span class="resource-icon red">♥</span>
+            <span><small>生命</small><strong id="header-hp">100 / 100</strong></span>
+          </div>
+        </div>
+
+        <div class="header-actions">
+          <button class="icon-button" id="sound-button" title="声音开关" aria-label="声音开关">♪</button>
+          <button class="icon-button" id="help-button" title="玩法说明" aria-label="玩法说明">?</button>
+        </div>
+      </header>
+
+      <main>
+        <section class="hero">
+          <div>
+            <p class="eyebrow">第一章 · 苔影森林</p>
+            <h1>泥土之下，<em>万物皆有回响。</em></h1>
+            <p class="hero-copy">
+              小鼹鼠会自动探索、挖掘与成长。偶尔抬头看看它带回了什么，
+              也别忘了为下一次冒险磨亮爪子。
+            </p>
+          </div>
+          <div class="weather">
+            <span class="weather-icon">☀</span>
+            <div><strong>林间晴日</strong><small>挖掘速度 +8%</small></div>
+          </div>
+        </section>
+
+        <section class="game-grid">
+          <aside class="card profile-card">
+            <div class="mole-portrait">
+              <div class="portrait-glow"></div>
+              <div class="mole-art" aria-label="鼹鼠角色">
+                <span class="ear left"></span><span class="ear right"></span>
+                <span class="mole-head">
+                  <i class="eye left"></i><i class="eye right"></i><i class="nose"></i>
+                </span>
+                <span class="mole-body"></span>
+                <span class="pickaxe">⛏</span>
+              </div>
+              <span class="status-dot"></span>
+            </div>
+
+            <div class="profile-name">
+              <div><h2>栗团</h2><span>勤快的寻宝鼹鼠</span></div>
+              <span class="level-badge">Lv.<b id="level">1</b></span>
+            </div>
+
+            <div class="xp-block">
+              <div class="bar-label"><span>成长经验</span><b id="xp-label">0 / 60</b></div>
+              <div class="progress"><i id="xp-bar"></i></div>
+            </div>
+
+            <div class="stats">
+              <div><span>⚔</span><small>爪力</small><b id="power">8</b></div>
+              <div><span>♢</span><small>护甲</small><b id="defense">3</b></div>
+              <div><span>⌁</span><small>幸运</small><b id="luck">5</b></div>
+            </div>
+
+            <div class="health-block">
+              <div class="bar-label"><span>♥ 活力</span><b id="hp-label">100 / 100</b></div>
+              <div class="progress health"><i id="hp-bar"></i></div>
+            </div>
+
+            <div class="profile-actions">
+              <button class="secondary-button" id="rest-button">在树洞休息</button>
+              <button class="primary-button" id="upgrade-button">强化爪子 <span id="upgrade-cost">◆ 30</span></button>
+            </div>
+          </aside>
+
+          <section class="card expedition-card">
+            <div class="section-heading">
+              <div>
+                <span class="overline">当前探索区域</span>
+                <h2>苔影森林 · 旧树根</h2>
+              </div>
+              <span class="depth-tag">深度 <b id="depth">1</b>m</span>
+            </div>
+
+            <div class="forest-scene" id="forest-scene">
+              <div class="sun-rays"></div>
+              <div class="cloud cloud-one"></div>
+              <div class="cloud cloud-two"></div>
+              <div class="mountain far"></div>
+              <div class="mountain near"></div>
+              <div class="tree-line"></div>
+              <div class="ground">
+                <span class="grass g1"></span><span class="grass g2"></span><span class="grass g3"></span>
+                <span class="stone s1"></span><span class="stone s2"></span>
+                <span class="mushroom">♠</span>
+              </div>
+              <div class="tunnel tunnel-a"></div>
+              <div class="tunnel tunnel-b"></div>
+              <div class="buried-item item-one">?</div>
+              <div class="buried-item item-two">◆</div>
+              <div class="dropped-pile hidden" id="dropped-pile" title="点击拾取掉落物">
+                <span>🎒</span><b>遗失物</b>
+              </div>
+              <div class="scene-mole" id="scene-mole">
+                <span class="mini-ear e1"></span><span class="mini-ear e2"></span>
+                <span class="mini-head"><i></i><b></b></span>
+                <span class="mini-body"></span><span class="mini-tool">⛏</span>
+              </div>
+              <div class="find-pop hidden" id="find-pop"></div>
+            </div>
+
+            <div class="expedition-status">
+              <div class="activity-icon" id="activity-icon">⛏</div>
+              <div class="activity-copy">
+                <strong id="activity-title">正在挖掘松软泥土……</strong>
+                <small id="activity-subtitle">可能发现普通材料或松果币</small>
+              </div>
+              <span class="time-left" id="time-left">4.0s</span>
+            </div>
+            <div class="progress dig-progress"><i id="dig-bar"></i></div>
+
+            <div class="zone-route">
+              <div class="route-line"><i id="route-line"></i></div>
+              <button class="route-node active" data-zone="0">
+                <span>♣</span><b>旧树根</b><small>当前</small>
+              </button>
+              <button class="route-node locked" data-zone="1">
+                <span>♨</span><b>萤火溪</b><small>Lv. 5</small>
+              </button>
+              <button class="route-node locked" data-zone="2">
+                <span>♜</span><b>古树心</b><small>Lv. 10</small>
+              </button>
+            </div>
+
+            <div class="control-row">
+              <button class="pause-button" id="pause-button"><span>Ⅱ</span> 暂停探索</button>
+              <label class="toggle-label">
+                <input type="checkbox" id="auto-battle" checked />
+                <span class="toggle"></span> 自动战斗
+              </label>
+            </div>
+          </section>
+
+          <aside class="right-column">
+            <section class="card event-card" id="event-card">
+              <div class="section-heading compact">
+                <div><span class="overline">林间动静</span><h2 id="event-heading">旅途平静</h2></div>
+                <span class="encounter-badge" id="event-badge">探索中</span>
+              </div>
+              <div class="encounter-visual" id="encounter-visual">
+                <div class="enemy-shadow"></div>
+                <span class="enemy-emoji" id="enemy-emoji">🦋</span>
+              </div>
+              <p id="event-description">蝴蝶在光斑间飞舞，今天的森林看起来很安宁。</p>
+              <div class="battle-area hidden" id="battle-area">
+                <div class="battle-row">
+                  <span>栗团</span><div class="progress health"><i id="battle-player-bar"></i></div>
+                  <b id="battle-player-hp">100</b>
+                </div>
+                <div class="battle-row enemy">
+                  <span id="enemy-name">尖牙野鼠</span><div class="progress"><i id="enemy-bar"></i></div>
+                  <b id="enemy-hp">30</b>
+                </div>
+              </div>
+              <div class="event-buttons">
+                <button class="event-action flee-action hidden" id="flee-action">绕开危险</button>
+                <button class="event-action" id="event-action" disabled>继续探索</button>
+              </div>
+            </section>
+
+            <section class="card journal-card">
+              <div class="section-heading compact">
+                <div><span class="overline">鼹鼠手记</span><h2>今日见闻</h2></div>
+                <button class="text-button" id="clear-log">清空</button>
+              </div>
+              <ul class="journal-list" id="journal-list"></ul>
+            </section>
+          </aside>
+        </section>
+
+        <section class="lower-grid">
+          <section class="card inventory-card">
+            <div class="section-heading">
+              <div><span class="overline">一路收获</span><h2>挖掘背包</h2></div>
+              <div class="capacity"><span id="bag-count">0</span> / <b id="bag-capacity">20</b></div>
+            </div>
+            <div class="inventory-filters" id="inventory-filters">
+              <button class="active" data-filter="all">全部</button>
+              <button data-filter="material">材料</button>
+              <button data-filter="treasure">宝物</button>
+              <button data-filter="food">食物</button>
+            </div>
+            <div class="inventory-grid" id="inventory-grid"></div>
+          </section>
+
+          <section class="card skills-card">
+            <div class="section-heading">
+              <div><span class="overline">越挖越熟练</span><h2>生存技能</h2></div>
+              <span class="skill-points">可用技能点 <b id="skill-points">0</b></span>
+            </div>
+            <div class="skill-list" id="skill-list"></div>
+          </section>
+        </section>
+
+        <section class="card leaderboard-card">
+          <div class="section-heading leaderboard-heading">
+            <div>
+              <span class="overline">森林探险家协会</span>
+              <h2>鼹鼠排行榜</h2>
+            </div>
+            <div class="leaderboard-profile">
+              <label for="player-name">我的名字</label>
+              <input id="player-name" maxlength="12" value="栗团" autocomplete="nickname" />
+              <button id="save-name-button">保存</button>
+            </div>
+          </div>
+          <div class="leaderboard-summary">
+            <div><small>我的排名</small><strong id="my-rank">--</strong></div>
+            <div><small>当前等级</small><strong>Lv.<span id="rank-level">1</span></strong></div>
+            <div><small>探索深度</small><strong><span id="rank-depth">1</span>m</strong></div>
+            <button class="refresh-rank-button" id="refresh-rank-button">↻ 刷新排行</button>
+          </div>
+          <div class="leaderboard-status" id="leaderboard-status">正在连接森林探险家协会……</div>
+          <div class="leaderboard-table-wrap">
+            <table class="leaderboard-table">
+              <thead>
+                <tr><th>名次</th><th>探险家</th><th>等级</th><th>最深记录</th><th>挖掘次数</th></tr>
+              </thead>
+              <tbody id="leaderboard-body">
+                <tr><td colspan="5" class="rank-empty">排行榜准备中</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+
+      <footer>
+        <span>鼹途 v0.1 · 森林篇</span>
+        <span>进度会自动保存在此浏览器</span>
+      </footer>
+    </div>
+
+    <div class="modal hidden" id="help-modal" role="dialog" aria-modal="true" aria-labelledby="help-title">
+      <div class="modal-panel">
+        <button class="modal-close" id="help-close" aria-label="关闭">×</button>
+        <span class="modal-icon">🌰</span>
+        <h2 id="help-title">欢迎来到苔影森林</h2>
+        <p>栗团会自动挖掘，每次行动都能获得经验，并可能带回材料、宝物和食物。</p>
+        <ul>
+          <li><b>升级：</b>提升生命和基础属性，获得技能点。</li>
+          <li><b>战斗：</b>遭遇怪物后自动进行；关闭自动战斗可手动迎战或绕开。</li>
+          <li><b>战败：</b>背包中的部分物品会留在原地，恢复后点击地图上的遗失物即可取回。</li>
+          <li><b>挂机：</b>关闭网页后也会积累最多 8 小时的离线收益。</li>
+        </ul>
+        <button class="primary-button wide" id="help-start">开始挖宝</button>
+      </div>
+    </div>
+
+    <div class="toast-stack" id="toast-stack" aria-live="polite"></div>
+
+    <script src="./config.js"></script>
+    <script src="./game.js"></script>
+  </body>
+</html>
