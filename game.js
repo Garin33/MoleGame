@@ -143,6 +143,8 @@
     sound: true,
     playerName: "",
     activeMap: "forest",
+    blackCatFavor: 0,
+    shop: { lastRefreshAt: 0, stock: [] },
   };
 
   let state = loadState();
@@ -152,6 +154,7 @@
   let battleTimer = 0;
   let saveTimer = 0;
   let leaderboardTimer = 0;
+  let shopTimer = 0;
   let activeFilter = "all";
   let audioContext = null;
   let leaderboardSession = null;
@@ -170,6 +173,7 @@
       { type: "hedgehog", name: "刺团", emoji: "🦔", x: 110, y: 438, targetX: 150, targetY: 430, angle: 2 },
     ],
     enemies: [],
+    npc: { name: "小黑", x: 455, y: 455 },
     engagedEnemy: null,
   };
 
@@ -238,6 +242,11 @@
     rankDepth: $("rank-depth"),
     leaderboardStatus: $("leaderboard-status"),
     leaderboardBody: $("leaderboard-body"),
+    catFavor: $("cat-favor"),
+    catDiscount: $("cat-discount"),
+    shopCountdown: $("shop-countdown"),
+    shopStock: $("shop-stock"),
+    refreshShopCost: $("refresh-shop-cost"),
     nameModal: $("name-modal"),
     nameForm: $("name-form"),
     newPlayerName: $("new-player-name"),
@@ -254,6 +263,7 @@
         ...saved,
         inventory: { ...saved.inventory },
         starInventory: { ...saved.starInventory },
+        shop: { ...defaultState.shop, ...saved.shop, stock: Array.isArray(saved.shop?.stock) ? saved.shop.stock : [] },
         dropped: { ...saved.dropped },
         skills: { ...defaultState.skills, ...saved.skills },
         logs: Array.isArray(saved.logs) ? saved.logs : [],
@@ -1234,11 +1244,13 @@
     const actors = [
       ...world.enemies.map((actor) => ({ actor, kind: "enemy", y: actor.y })),
       ...world.allies.map((actor) => ({ actor, kind: "ally", y: actor.y })),
+      { actor: world.npc, kind: "npc", y: world.npc.y },
       { actor: world.mole, kind: "mole", y: world.mole.y },
     ].sort((a, b) => a.y - b.y);
     actors.forEach(({ actor, kind }) => {
       if (kind === "mole") drawWorldMole(ctx, actor);
       else if (kind === "ally") drawWorldAlly(ctx, actor);
+      else if (kind === "npc") drawWorldNpc(ctx, actor);
       else drawWorldEnemy(ctx, actor);
     });
   }
@@ -1371,6 +1383,21 @@
     ctx.restore();
   }
 
+  function drawWorldNpc(ctx, npc) {
+    ctx.save();
+    ctx.translate(npc.x, npc.y);
+    ctx.fillStyle = "rgba(29,37,31,.24)";
+    ctx.beginPath(); ctx.ellipse(0, 15, 27, 8, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#76553a"; ctx.fillRect(-28, 7, 56, 15);
+    ctx.fillStyle = "#d6b35f"; ctx.fillRect(-31, 3, 62, 7);
+    ctx.fillStyle = "#513a29"; ctx.fillRect(-25, 21, 4, 12); ctx.fillRect(21, 21, 4, 12);
+    ctx.font = '30px "Segoe UI Emoji"';
+    ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("🐈‍⬛", 0, -8);
+    ctx.fillStyle = "#e2c36d"; ctx.font = "bold 9px sans-serif"; ctx.fillText("◆", -19, 9); ctx.fillText("✦", 18, 10);
+    drawActorLabel(ctx, "商人·小黑", 0, -35, "#f8e8a8");
+    ctx.restore();
+  }
+
   function drawWorldEnemy(ctx, worldEnemy) {
     ctx.save();
     ctx.translate(worldEnemy.x, worldEnemy.y);
@@ -1486,6 +1513,97 @@
     render();
   }
 
+  function catDiscount() {
+    return Math.min(0.3, Math.floor(state.blackCatFavor / 100) * 0.05);
+  }
+
+  function shopRefreshCost() {
+    return 25 + Math.floor(state.level / 5) * 5;
+  }
+
+  function createShopStock() {
+    const mapPool = MAPS[state.activeMap].loot;
+    const byType = (type) => mapPool.filter((id) => ITEMS[id].type === type);
+    const choices = [
+      byType("food")[Math.floor(Math.random() * byType("food").length)],
+      byType("material")[Math.floor(Math.random() * byType("material").length)],
+      byType("treasure")[Math.floor(Math.random() * byType("treasure").length)],
+      mapPool[Math.floor(Math.random() * mapPool.length)],
+    ].filter(Boolean);
+    return choices.map((id, index) => {
+      const item = ITEMS[id];
+      const scarcity = item.rare ? 6 : item.type === "treasure" ? 4 : 3;
+      return {
+        id,
+        basePrice: Math.max(5, Math.round(item.value * scarcity * (0.9 + Math.random() * 0.25))),
+        sold: false,
+        slot: `${Date.now()}-${index}`,
+      };
+    });
+  }
+
+  function refreshShop(manual = false) {
+    const cost = shopRefreshCost();
+    if (manual && state.coins < cost) {
+      toast(`刷新货物还需要 ${cost - state.coins} 枚松果币`, "red");
+      return;
+    }
+    if (manual) state.coins -= cost;
+    state.shop.stock = createShopStock();
+    state.shop.lastRefreshAt = Date.now();
+    log(manual ? `花费 ${cost} 枚松果币，请 <b>小黑</b>换了一批货物。` : "<b>小黑</b>的旅行货物已自动刷新。");
+    if (manual) toast("小黑换上了一批新货");
+    renderShop();
+    saveState();
+  }
+
+  function ensureShopFresh() {
+    const oneHour = 60 * 60 * 1000;
+    if (!state.shop.stock.length || Date.now() - state.shop.lastRefreshAt >= oneHour) refreshShop(false);
+  }
+
+  function buyShopItem(index) {
+    const stockItem = state.shop.stock[index];
+    if (!stockItem || stockItem.sold) return;
+    const price = Math.max(1, Math.round(stockItem.basePrice * (1 - catDiscount())));
+    if (state.coins < price) {
+      toast(`还差 ${price - state.coins} 枚松果币`, "red");
+      return;
+    }
+    if (bagCount() >= state.bagCapacity) autoSellLowTier(1);
+    if (bagCount() >= state.bagCapacity) {
+      toast("背包里全是珍贵物品，请先使用或献宝", "red");
+      return;
+    }
+    const added = addItem(stockItem.id, 1);
+    if (!added) return;
+    state.coins -= price;
+    stockItem.sold = true;
+    log(`从 <b>小黑</b>处购买了 ${ITEMS[stockItem.id].name}，花费 ${price} 枚松果币。`);
+    toast(`购买成功 · ${ITEMS[stockItem.id].name}`);
+    saveState();
+    render();
+  }
+
+  function renderShop() {
+    elements.catFavor.textContent = formatNumber(state.blackCatFavor);
+    elements.catDiscount.textContent = `${Math.round(catDiscount() * 100)}%`;
+    elements.refreshShopCost.textContent = `◆ ${shopRefreshCost()}`;
+    const remaining = Math.max(0, 60 * 60 * 1000 - (Date.now() - state.shop.lastRefreshAt));
+    const minutes = Math.floor(remaining / 60000);
+    const seconds = Math.floor((remaining % 60000) / 1000);
+    elements.shopCountdown.textContent = `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+    elements.shopStock.innerHTML = state.shop.stock.map((stockItem, index) => {
+      const item = ITEMS[stockItem.id];
+      const price = Math.max(1, Math.round(stockItem.basePrice * (1 - catDiscount())));
+      return `<div class="shop-item ${stockItem.sold ? "sold" : ""}">
+        <span class="shop-item-icon">${item.icon}</span>
+        <span class="shop-item-info"><b>${item.name}</b><small>${item.rare ? "稀有货物" : item.type === "food" ? "补给品" : item.type === "material" ? "材料" : "收藏品"}</small></span>
+        <button class="shop-buy" data-shop-index="${index}" ${stockItem.sold ? "disabled" : ""}>◆ ${price} · 购买</button>
+      </div>`;
+    }).join("");
+  }
+
   function renderInventory() {
     const entries = Object.entries(state.inventory)
       .filter(([id, count]) => count > 0 && (activeFilter === "all" || ITEMS[id].type === activeFilter))
@@ -1506,7 +1624,7 @@
       .map(({ id, count, star }) => {
         const item = ITEMS[id];
         const action = item.type === "food" ? "use" : item.type === "material" ? "sell" : "offer";
-        const actionLabel = action === "use" ? `食用 +${item.value * 3}` : action === "sell" ? `出售 +${item.value}` : `献宝 +${item.value * star * 2}`;
+        const actionLabel = action === "use" ? `食用 +${item.value * 3}` : action === "sell" ? `出售 +${item.value}` : `献给小黑 +${item.value * star * 2}`;
         return `<div class="inventory-slot ${item.rare ? "rare" : ""} ${star > 1 ? "starred" : ""}" title="${item.name} · ${star}星">
           <span class="count">${count}</span>
           <span class="item-icon">${item.icon}</span>
@@ -1542,11 +1660,13 @@
       removeOne();
       const coinReward = item.value * star * 2;
       const xpReward = Math.max(2, Math.round(item.value * star * 0.6));
+      const favorReward = Math.max(1, Math.round(item.value * star * (item.rare ? 1.5 : 1)));
       state.coins += coinReward;
+      state.blackCatFavor += favorReward;
       addXp(xpReward);
       if (item.rare && star >= 2) state.sprouts += star - 1;
-      log(`向协会献上 ${star > 1 ? `${star}星` : ""}<b>${item.name}</b>，获得 ${coinReward} 松果币与 ${xpReward} 经验。`);
-      toast(`献宝成功 · +${coinReward} 松果币${item.rare && star >= 2 ? ` · +${star - 1} 嫩芽` : ""}`, "gold");
+      log(`向 <b>小黑</b>献上 ${star > 1 ? `${star}星` : ""}${item.name}，好感度提升 ${favorReward}。`);
+      toast(`小黑很满意 · 好感 +${favorReward} · 松果币 +${coinReward}`, "gold");
     }
     saveState();
     render();
@@ -1664,6 +1784,7 @@
     elements.routeLine.style.width = `${state.activeZone * 50}%`;
     unlockZones();
     renderInventory();
+    renderShop();
     renderSkills();
     renderLogs();
     renderBattle();
@@ -1707,6 +1828,12 @@
     if (leaderboardTimer > 60000) {
       leaderboardTimer = 0;
       if (leaderboardConfig().url) submitScore(true);
+    }
+    shopTimer += delta;
+    if (shopTimer > 1000) {
+      shopTimer = 0;
+      ensureShopFresh();
+      renderShop();
     }
     requestAnimationFrame(loop);
   }
@@ -1757,6 +1884,11 @@
       if (!button) return;
       useInventoryItem(button.dataset.itemAction, button.dataset.itemId, Number(button.dataset.itemStar));
     });
+    $("shop-stock").addEventListener("click", (event) => {
+      const button = event.target.closest("[data-shop-index]");
+      if (button) buyShopItem(Number(button.dataset.shopIndex));
+    });
+    $("refresh-shop-button").addEventListener("click", () => refreshShop(true));
     $("map-selector").addEventListener("click", (event) => {
       const button = event.target.closest("[data-map]");
       if (button) selectMap(button.dataset.map);
@@ -1814,6 +1946,7 @@
     if (!state.logs.length) log("栗团背起小包，第一次踏进了 <b>苔影森林</b>。");
     state.hp = Math.min(state.hp, maxHp());
     Object.keys(state.inventory).filter((id) => ITEMS[id]?.rare).forEach((id) => synthesizeRareItem(id, true));
+    ensureShopFresh();
     initWorld();
     bindEvents();
     render();

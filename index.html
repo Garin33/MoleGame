@@ -248,6 +248,31 @@
           </section>
         </section>
 
+        <section class="card cat-shop-card">
+          <div class="cat-shop-intro">
+            <div class="cat-portrait" aria-label="黑猫商人小黑">
+              <span>🐈‍⬛</span>
+              <i>旅行商人</i>
+            </div>
+            <div class="cat-copy">
+              <span class="overline">地图常驻 NPC</span>
+              <h2>小黑的奇物摊</h2>
+              <p>“有闪亮宝物就带来吧。老朋友，价格总会更好谈一些。”</p>
+              <div class="favor-row">
+                <span>♥ 好感度 <b id="cat-favor">0</b></span>
+                <span>当前折扣 <b id="cat-discount">0%</b></span>
+              </div>
+            </div>
+          </div>
+          <div class="shop-main">
+            <div class="shop-toolbar">
+              <div><small>距离自动刷新</small><strong id="shop-countdown">59:59</strong></div>
+              <button id="refresh-shop-button">↻ 刷新货物 <span id="refresh-shop-cost">◆ 25</span></button>
+            </div>
+            <div class="shop-stock" id="shop-stock"></div>
+          </div>
+        </section>
+
         <section class="card leaderboard-card">
           <div class="section-heading leaderboard-heading">
             <div>
@@ -315,7 +340,8 @@
           <li><b>智能队友：</b>萤萤会跟随治疗，刺团会巡逻并在战斗中协助攻击。</li>
           <li><b>方形地图：</b>栗团会自主寻找发光土堆，敌人也会巡逻、察觉并追击。</li>
           <li><b>背包循环：</b>满仓会自动出售低阶物品；3 件同名稀有宝物会自动升星。</li>
-          <li><b>使用道具：</b>食物恢复活力、材料可出售、宝物可献给协会换取奖励。</li>
+          <li><b>黑猫小黑：</b>宝物可以献给小黑提升好感；好感越高，商店折扣越多。</li>
+          <li><b>旅行商店：</b>可购买或付费刷新货物，未手动刷新时每小时自动换货。</li>
           <li><b>战败：</b>背包中的部分物品会留在原地，恢复后点击地图上的遗失物即可取回。</li>
           <li><b>挂机：</b>关闭网页后也会积累最多 8 小时的离线收益。</li>
         </ul>

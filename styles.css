@@ -288,6 +288,25 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .skill-level i { width: 17px; height: 3px; border-radius: 3px; background: #d6d9d0; }.skill-level i.filled { background: var(--moss); }
 .skill-up { width: 30px; height: 30px; border: 0; border-radius: 9px; color: white; background: var(--forest); cursor: pointer; font-size: 16px; }
 
+.cat-shop-card { display: grid; grid-template-columns: 260px 1fr; gap: 22px; margin-top: 18px; padding: 22px; overflow: hidden; }
+.cat-shop-intro { display: flex; gap: 14px; align-items: center; padding-right: 20px; border-right: 1px dashed var(--line); }
+.cat-portrait { position: relative; flex: 0 0 82px; display: grid; place-items: center; height: 100px; overflow: hidden; border-radius: 17px; background: radial-gradient(circle at 50% 30%, #e9d998, transparent 18%), linear-gradient(#829b79, #456451); }
+.cat-portrait::after { content: ""; position: absolute; left: -8px; right: -8px; bottom: -19px; height: 45px; border-radius: 50%; background: #294a39; }
+.cat-portrait span { position: relative; z-index: 1; font-size: 51px; filter: drop-shadow(0 5px 4px rgba(16,31,22,.25)); }
+.cat-portrait i { position: absolute; z-index: 2; bottom: 6px; padding: 3px 6px; border-radius: 5px; color: #f5edcb; background: rgba(21,48,34,.8); font-size: 6px; font-style: normal; }
+.cat-copy { min-width: 0; }.cat-copy h2 { margin: 0; font: 22px "Ma Shan Zheng", cursive; }.cat-copy p { margin: 7px 0 10px; color: var(--muted); font-size: 8px; line-height: 1.7; }
+.favor-row { display: flex; flex-wrap: wrap; gap: 5px; }.favor-row span { padding: 5px 7px; border-radius: 7px; color: var(--muted); background: #f0f0e7; font-size: 7px; }.favor-row b { color: var(--forest); }
+.shop-main { min-width: 0; }
+.shop-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 15px; margin-bottom: 10px; }
+.shop-toolbar small, .shop-toolbar strong { display: block; }.shop-toolbar small { color: var(--muted); font-size: 7px; }.shop-toolbar strong { margin-top: 2px; font-size: 12px; font-variant-numeric: tabular-nums; }
+.shop-toolbar button { padding: 8px 11px; border: 0; border-radius: 9px; color: var(--forest); background: #e6ecdc; cursor: pointer; font-size: 8px; font-weight: 700; }.shop-toolbar button:hover { background: #dce7cd; }.shop-toolbar button span { margin-left: 5px; color: #a47724; }
+.shop-stock { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.shop-item { position: relative; display: grid; grid-template-columns: 37px 1fr; align-items: center; gap: 8px; min-width: 0; padding: 9px; border: 1px solid var(--line); border-radius: 12px; background: #f6f4eb; }
+.shop-item.sold { filter: grayscale(1); opacity: .52; }.shop-item.sold::after { content: "已售罄"; position: absolute; inset: 0; display: grid; place-items: center; color: white; background: rgba(39,54,46,.54); border-radius: inherit; font-size: 8px; font-weight: 700; }
+.shop-item-icon { display: grid; place-items: center; width: 37px; height: 37px; border-radius: 10px; background: #ebe8db; font-size: 23px; }
+.shop-item-info { min-width: 0; }.shop-item-info b, .shop-item-info small { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }.shop-item-info b { font-size: 8px; }.shop-item-info small { margin-top: 2px; color: var(--muted); font-size: 6px; }
+.shop-buy { grid-column: 1 / -1; width: 100%; padding: 5px; border: 0; border-radius: 6px; color: white; background: var(--forest); cursor: pointer; font-size: 7px; font-weight: 700; }
+
 .leaderboard-card { margin-top: 18px; padding: 24px; }
 .leaderboard-heading { align-items: end; }
 .leaderboard-profile { display: flex; align-items: center; gap: 7px; }
@@ -363,6 +382,8 @@ footer { display: flex; justify-content: space-between; padding: 24px 4px 32px; 
   .inventory-grid { grid-template-columns: repeat(4, 1fr); }
   .leaderboard-summary { grid-template-columns: repeat(3, 1fr); }
   .refresh-rank-button { grid-column: 1 / -1; justify-self: stretch; }
+  .cat-shop-card { grid-template-columns: 1fr; }
+  .cat-shop-intro { padding: 0 0 16px; border-right: 0; border-bottom: 1px dashed var(--line); }
 }
 
 @media (max-width: 780px) {
@@ -403,6 +424,8 @@ footer { display: flex; justify-content: space-between; padding: 24px 4px 32px; 
   .zone-route { padding-left: 0; padding-right: 0; }
   .route-node { min-width: 70px; }
   .inventory-grid { grid-template-columns: repeat(3, 1fr); }
+  .cat-shop-card { padding: 16px; }
+  .shop-stock { grid-template-columns: repeat(2, 1fr); }
   .leaderboard-card { padding: 16px; }
   .leaderboard-heading { align-items: start; flex-direction: column; }
   .leaderboard-profile { width: 100%; }
