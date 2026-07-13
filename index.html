@@ -102,7 +102,7 @@
             </div>
 
             <div class="profile-name">
-              <div><h2>栗团</h2><span>黑绒寻宝鼹鼠</span></div>
+              <div><h2 id="profile-display-name">新朋友</h2><span>黑绒寻宝鼹鼠</span></div>
               <span class="level-badge">Lv.<b id="level">1</b></span>
             </div>
 
@@ -225,7 +225,10 @@
           <section class="card inventory-card">
             <div class="section-heading">
               <div><span class="overline">一路收获</span><h2>挖掘背包</h2></div>
-              <div class="capacity"><span id="bag-count">0</span> / <b id="bag-capacity">20</b></div>
+              <div class="bag-head-actions">
+                <small>满仓自动出售低阶</small>
+                <div class="capacity"><span id="bag-count">0</span> / <b id="bag-capacity">20</b></div>
+              </div>
             </div>
             <div class="inventory-filters" id="inventory-filters">
               <button class="active" data-filter="all">全部</button>
@@ -253,7 +256,7 @@
             </div>
             <div class="leaderboard-profile">
               <label for="player-name">我的名字</label>
-              <input id="player-name" maxlength="12" value="栗团" autocomplete="nickname" />
+              <input id="player-name" maxlength="12" placeholder="输入昵称" autocomplete="nickname" />
               <button id="save-name-button">保存</button>
             </div>
           </div>
@@ -283,6 +286,21 @@
       </footer>
     </div>
 
+    <div class="modal hidden" id="name-modal" role="dialog" aria-modal="true" aria-labelledby="name-title">
+      <form class="modal-panel name-panel" id="name-form">
+        <span class="modal-icon">🐾</span>
+        <p class="name-step">建立探险家档案</p>
+        <h2 id="name-title">先为你的小鼹鼠取个名字</h2>
+        <p>名字将显示在全服排行榜中，确认后仍可修改，但不能与其他玩家重名。</p>
+        <label class="name-input-wrap" for="new-player-name">
+          <span>探险家昵称</span>
+          <input id="new-player-name" minlength="2" maxlength="12" autocomplete="nickname" placeholder="2–12 个字符" required />
+        </label>
+        <p class="name-feedback" id="name-feedback">支持中文、英文、数字和下划线</p>
+        <button class="primary-button wide" id="claim-name-button" type="submit">确认名字，开始探险</button>
+      </form>
+    </div>
+
     <div class="modal hidden" id="help-modal" role="dialog" aria-modal="true" aria-labelledby="help-title">
       <div class="modal-panel">
         <button class="modal-close" id="help-close" aria-label="关闭">×</button>
@@ -296,6 +314,8 @@
           <li><b>战斗：</b>遭遇怪物后自动进行；关闭自动战斗可手动迎战或绕开。</li>
           <li><b>智能队友：</b>萤萤会跟随治疗，刺团会巡逻并在战斗中协助攻击。</li>
           <li><b>方形地图：</b>栗团会自主寻找发光土堆，敌人也会巡逻、察觉并追击。</li>
+          <li><b>背包循环：</b>满仓会自动出售低阶物品；3 件同名稀有宝物会自动升星。</li>
+          <li><b>使用道具：</b>食物恢复活力、材料可出售、宝物可献给协会换取奖励。</li>
           <li><b>战败：</b>背包中的部分物品会留在原地，恢复后点击地图上的遗失物即可取回。</li>
           <li><b>挂机：</b>关闭网页后也会积累最多 8 小时的离线收益。</li>
         </ul>

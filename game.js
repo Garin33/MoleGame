@@ -128,6 +128,7 @@
     luck: 5,
     depth: 1,
     inventory: {},
+    starInventory: {},
     bagCapacity: 20,
     skillPoints: 0,
     skills: { digger: 0, fighter: 0, forager: 0 },
@@ -140,7 +141,7 @@
     lastSavedAt: Date.now(),
     totalDigs: 0,
     sound: true,
-    playerName: "栗团",
+    playerName: "",
     activeMap: "forest",
   };
 
@@ -156,6 +157,7 @@
   let leaderboardSession = null;
   let leaderboardRows = [];
   let worldContext = null;
+  let onboardingBlocked = false;
   const WORLD_SIZE = 520;
   const world = {
     time: 0,
@@ -177,6 +179,7 @@
     sprouts: $("sprouts"),
     headerHp: $("header-hp"),
     level: $("level"),
+    profileDisplayName: $("profile-display-name"),
     xpLabel: $("xp-label"),
     xpBar: $("xp-bar"),
     power: $("power"),
@@ -235,6 +238,11 @@
     rankDepth: $("rank-depth"),
     leaderboardStatus: $("leaderboard-status"),
     leaderboardBody: $("leaderboard-body"),
+    nameModal: $("name-modal"),
+    nameForm: $("name-form"),
+    newPlayerName: $("new-player-name"),
+    nameFeedback: $("name-feedback"),
+    claimNameButton: $("claim-name-button"),
   };
 
   function loadState() {
@@ -245,6 +253,7 @@
         ...structuredClone(defaultState),
         ...saved,
         inventory: { ...saved.inventory },
+        starInventory: { ...saved.starInventory },
         dropped: { ...saved.dropped },
         skills: { ...defaultState.skills, ...saved.skills },
         logs: Array.isArray(saved.logs) ? saved.logs : [],
@@ -334,26 +343,82 @@
     return leaderboardSession;
   }
 
+  async function saveRemoteProfile(playerName) {
+    const session = await getLeaderboardSession();
+    await supabaseRequest("/rest/v1/leaderboard?on_conflict=user_id", {
+      method: "POST",
+      headers: { Prefer: "resolution=merge-duplicates,return=minimal" },
+      body: JSON.stringify({
+        user_id: session.user.id,
+        player_name: playerName,
+        level: state.level,
+        depth: state.depth,
+        total_digs: state.totalDigs,
+        updated_at: new Date().toISOString(),
+      }),
+    }, true);
+  }
+
   async function submitScore(silent = false) {
+    if (!state.playerName) {
+      await loadLeaderboard();
+      return false;
+    }
     try {
-      if (!silent) setLeaderboardStatus("正在同步你的森林探索记录……");
-      const session = await getLeaderboardSession();
-      await supabaseRequest("/rest/v1/leaderboard?on_conflict=user_id", {
-        method: "POST",
-        headers: { Prefer: "resolution=merge-duplicates,return=minimal" },
-        body: JSON.stringify({
-          user_id: session.user.id,
-          player_name: state.playerName,
-          level: state.level,
-          depth: state.depth,
-          total_digs: state.totalDigs,
-          updated_at: new Date().toISOString(),
-        }),
-      }, true);
+      if (!silent) setLeaderboardStatus("正在同步你的探险记录……");
+      await saveRemoteProfile(state.playerName);
       await loadLeaderboard();
       if (!silent) toast("排行榜记录已更新", "gold");
+      return true;
     } catch (error) {
+      if (isNameConflict(error)) {
+        onboardingBlocked = true;
+        elements.newPlayerName.value = "";
+        elements.nameFeedback.textContent = "原来的名字已被占用，请重新取一个唯一昵称";
+        elements.nameFeedback.className = "name-feedback error";
+        elements.nameModal.classList.remove("hidden");
+      }
       setLeaderboardStatus(`排行榜连接失败：${friendlyLeaderboardError(error)}`, "error");
+      return false;
+    }
+  }
+
+  async function claimPlayerName(rawName, onboarding = false) {
+    const name = rawName.trim().replace(/\s+/g, "");
+    const feedback = onboarding ? elements.nameFeedback : elements.leaderboardStatus;
+    const setFeedback = (message, type = "") => {
+      feedback.textContent = message;
+      if (onboarding) feedback.className = `name-feedback ${type}`;
+      else feedback.className = `leaderboard-status ${type}`;
+    };
+    if (!/^[\p{L}\p{N}_]{2,12}$/u.test(name)) {
+      setFeedback("请输入 2–12 个中文、英文、数字或下划线", "error");
+      return false;
+    }
+    elements.claimNameButton.disabled = true;
+    if (onboarding) setFeedback("正在确认名字是否可用……");
+    else setLeaderboardStatus("正在确认新名字……");
+    try {
+      await saveRemoteProfile(name);
+      state.playerName = name;
+      onboardingBlocked = false;
+      elements.playerName.value = name;
+      elements.newPlayerName.value = name;
+      elements.nameModal.classList.add("hidden");
+      saveState();
+      render();
+      await loadLeaderboard();
+      toast(`欢迎你，${name}！`, "gold");
+      if (onboarding && !localStorage.getItem(`${SAVE_KEY}-welcomed`)) {
+        elements.helpModal.classList.remove("hidden");
+      }
+      return true;
+    } catch (error) {
+      const duplicate = isNameConflict(error);
+      setFeedback(duplicate ? "这个名字已经被其他探险家使用了，请换一个" : `暂时无法确认：${friendlyLeaderboardError(error)}`, "error");
+      return false;
+    } finally {
+      elements.claimNameButton.disabled = false;
     }
   }
 
@@ -373,6 +438,10 @@
     if (error.message === "排行榜尚未配置") return "等待管理员配置云数据库";
     if (/Failed to fetch/i.test(error.message)) return "网络暂时不可用";
     return error.message.length > 90 ? "云数据库配置不完整" : error.message;
+  }
+
+  function isNameConflict(error) {
+    return /23505|duplicate key|player_name_unique/i.test(error.message);
   }
 
   function escapeHtml(value) {
@@ -407,7 +476,8 @@
       setLeaderboardStatus("排行榜等待 Supabase 配置，游戏的本地进度不受影响。");
       return;
     }
-    await submitScore(true);
+    if (state.playerName) await submitScore(true);
+    else await loadLeaderboard();
   }
 
   function xpNeeded(level = state.level) {
@@ -431,7 +501,12 @@
   }
 
   function bagCount() {
-    return Object.values(state.inventory).reduce((sum, count) => sum + count, 0);
+    const baseItems = Object.values(state.inventory).reduce((sum, count) => sum + count, 0);
+    const starredItems = Object.values(state.starInventory).reduce(
+      (sum, stars) => sum + Object.values(stars).reduce((starSum, count) => starSum + count, 0),
+      0,
+    );
+    return baseItems + starredItems;
   }
 
   function formatNumber(value) {
@@ -457,22 +532,87 @@
   }
 
   function addItem(id, amount = 1, silent = false) {
-    const room = Math.max(0, state.bagCapacity - bagCount());
+    const item = ITEMS[id];
+    let room = Math.max(0, state.bagCapacity - bagCount());
+    if (room < amount) {
+      autoSellLowTier(amount - room, silent);
+      room = Math.max(0, state.bagCapacity - bagCount());
+    }
     const added = Math.min(room, amount);
     if (added > 0) {
       state.inventory[id] = (state.inventory[id] || 0) + added;
       if (!silent) {
-        showFind(`${ITEMS[id].icon} ${ITEMS[id].name} ×${added}`);
-        toast(`发现 ${ITEMS[id].name} ×${added}`, ITEMS[id].rare ? "gold" : "");
+        showFind(`${item.icon} ${item.name} ×${added}`);
+        toast(`发现 ${item.name} ×${added}`, item.rare ? "gold" : "");
+      }
+      if (item.rare) synthesizeRareItem(id, silent);
+    }
+    if (added < amount) {
+      const overflow = amount - added;
+      if (!item.rare && item.type !== "treasure") {
+        const sale = overflow * item.value;
+        state.coins += sale;
+        if (!silent) toast(`背包已满，${item.name}自动售出 +${sale}`, "gold");
+      } else if (!silent) {
+        toast("背包里全是珍贵物品，无法继续装入", "red");
       }
     }
-    if (added < amount && !silent) toast("背包满了，剩余物品留在土里", "red");
     return added;
+  }
+
+  function autoSellLowTier(requiredSlots, silent = false) {
+    let freed = 0;
+    let earned = 0;
+    const candidates = Object.keys(state.inventory)
+      .filter((id) => state.inventory[id] > 0 && !ITEMS[id].rare && ITEMS[id].type !== "treasure")
+      .sort((a, b) => ITEMS[a].value - ITEMS[b].value);
+    for (const id of candidates) {
+      while (state.inventory[id] > 0 && freed < requiredSlots) {
+        removeItem(id, 1);
+        earned += ITEMS[id].value;
+        freed += 1;
+      }
+      if (freed >= requiredSlots) break;
+    }
+    if (earned > 0) {
+      state.coins += earned;
+      log(`背包已满，自动出售 ${freed} 件低阶物品，获得 <b>${earned} 枚松果币</b>。`);
+      if (!silent) toast(`自动清仓 ${freed} 件 · +${earned} 松果币`, "gold");
+    }
+    return freed;
+  }
+
+  function synthesizeRareItem(id, silent = false) {
+    state.starInventory[id] ||= {};
+    let craftedAny = false;
+    for (let star = 1; star < 5; star += 1) {
+      const available = star === 1 ? state.inventory[id] || 0 : state.starInventory[id][star] || 0;
+      const crafted = Math.floor(available / 3);
+      if (!crafted) continue;
+      if (star === 1) removeItem(id, crafted * 3);
+      else state.starInventory[id][star] -= crafted * 3;
+      state.starInventory[id][star + 1] = (state.starInventory[id][star + 1] || 0) + crafted;
+      craftedAny = true;
+      log(`<b>${ITEMS[id].name}</b>自动合成为 ${star + 1} 星 ×${crafted}。`);
+      if (!silent) toast(`${ITEMS[id].name} 合成 ${"★".repeat(star + 1)}`, "gold");
+    }
+    Object.keys(state.starInventory[id]).forEach((star) => {
+      if (state.starInventory[id][star] <= 0) delete state.starInventory[id][star];
+    });
+    if (!Object.keys(state.starInventory[id]).length) delete state.starInventory[id];
+    if (craftedAny) beep(820, 0.13);
   }
 
   function removeItem(id, amount) {
     state.inventory[id] = Math.max(0, (state.inventory[id] || 0) - amount);
     if (!state.inventory[id]) delete state.inventory[id];
+  }
+
+  function removeStarItem(id, star, amount = 1) {
+    if (!state.starInventory[id]?.[star]) return;
+    state.starInventory[id][star] = Math.max(0, state.starInventory[id][star] - amount);
+    if (!state.starInventory[id][star]) delete state.starInventory[id][star];
+    if (!Object.keys(state.starInventory[id]).length) delete state.starInventory[id];
   }
 
   function rollLoot(offline = false) {
@@ -795,18 +935,19 @@
   function recoverDropped() {
     const count = Object.values(state.dropped).reduce((sum, amount) => sum + amount, 0);
     if (!count) return;
-    const room = state.bagCapacity - bagCount();
-    if (room <= 0) {
+    if (state.bagCapacity - bagCount() <= 0) autoSellLowTier(1, true);
+    if (state.bagCapacity - bagCount() <= 0) {
       toast("背包没有空间，无法拾取", "red");
       return;
     }
     let recovered = 0;
     for (const [id, amount] of Object.entries({ ...state.dropped })) {
-      if (recovered >= room) break;
-      const take = Math.min(amount, room - recovered);
-      addItem(id, take, true);
-      state.dropped[id] -= take;
-      recovered += take;
+      const room = state.bagCapacity - bagCount();
+      if (room <= 0) break;
+      const take = Math.min(amount, room);
+      const added = addItem(id, take, true);
+      state.dropped[id] -= added;
+      recovered += added;
       if (state.dropped[id] <= 0) delete state.dropped[id];
     }
     log(`重新找回了 <b>${recovered} 件遗失物</b>。`);
@@ -819,11 +960,7 @@
     const elapsed = Math.min(8 * 60 * 60 * 1000, Math.max(0, Date.now() - state.lastSavedAt));
     if (elapsed < 2 * 60 * 1000) return;
     const minutes = Math.floor(elapsed / 60000);
-    const actions = Math.min(state.bagCapacity - bagCount(), Math.max(1, Math.floor(minutes / 3)));
-    if (actions <= 0) {
-      toast(`离开了 ${minutes} 分钟，但背包已经装满`);
-      return;
-    }
+    const actions = Math.min(20, Math.max(1, Math.floor(minutes / 3)));
     const coinGain = actions * 2;
     state.coins += coinGain;
     for (let i = 0; i < actions; i += 1) {
@@ -972,7 +1109,7 @@
 
   function updateWorld(delta) {
     world.time += delta;
-    if (state.paused) return;
+    if (state.paused || onboardingBlocked) return;
 
     if (mode === "digging" && world.mole.phase === "walk") {
       const remaining = moveToward(world.mole, world.mole.targetX, world.mole.targetY, 0.072, delta);
@@ -1213,7 +1350,7 @@
     ctx.strokeStyle = "#c8c4ad"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(-8, -2); ctx.lineTo(8, -2); ctx.stroke();
     ctx.restore();
     ctx.scale(mole.facing, 1);
-    drawActorLabel(ctx, "栗团", 0, -31, "#f7f2d9");
+    drawActorLabel(ctx, state.playerName || "新朋友", 0, -31, "#f7f2d9");
     ctx.restore();
   }
 
@@ -1350,23 +1487,69 @@
   }
 
   function renderInventory() {
-    const entries = Object.entries(state.inventory).filter(
-      ([id, count]) => count > 0 && (activeFilter === "all" || ITEMS[id].type === activeFilter),
-    );
+    const entries = Object.entries(state.inventory)
+      .filter(([id, count]) => count > 0 && (activeFilter === "all" || ITEMS[id].type === activeFilter))
+      .map(([id, count]) => ({ id, count, star: 1 }));
+    Object.entries(state.starInventory).forEach(([id, stars]) => {
+      Object.entries(stars).forEach(([star, count]) => {
+        if (count > 0 && (activeFilter === "all" || ITEMS[id].type === activeFilter)) {
+          entries.push({ id, count, star: Number(star) });
+        }
+      });
+    });
+    entries.sort((a, b) => b.star - a.star || ITEMS[b.id].value - ITEMS[a.id].value);
     if (!entries.length) {
       elements.inventoryGrid.innerHTML = '<div class="empty-bag">这里空空的，继续向下挖吧。</div>';
       return;
     }
     elements.inventoryGrid.innerHTML = entries
-      .map(([id, count]) => {
+      .map(({ id, count, star }) => {
         const item = ITEMS[id];
-        return `<div class="inventory-slot ${item.rare ? "rare" : ""}" title="${item.name} · 价值 ${item.value} 松果币">
+        const action = item.type === "food" ? "use" : item.type === "material" ? "sell" : "offer";
+        const actionLabel = action === "use" ? `食用 +${item.value * 3}` : action === "sell" ? `出售 +${item.value}` : `献宝 +${item.value * star * 2}`;
+        return `<div class="inventory-slot ${item.rare ? "rare" : ""} ${star > 1 ? "starred" : ""}" title="${item.name} · ${star}星">
           <span class="count">${count}</span>
           <span class="item-icon">${item.icon}</span>
           <b>${item.name}</b>
+          <span class="item-stars">${item.rare ? "★".repeat(star) : ""}</span>
+          <button class="item-action" data-item-action="${action}" data-item-id="${id}" data-item-star="${star}">${actionLabel}</button>
         </div>`;
       })
       .join("");
+  }
+
+  function useInventoryItem(action, id, star) {
+    const item = ITEMS[id];
+    const isStarred = star > 1;
+    const removeOne = () => (isStarred ? removeStarItem(id, star) : removeItem(id, 1));
+    if (!item || (isStarred ? !state.starInventory[id]?.[star] : !state.inventory[id])) return;
+
+    if (action === "use" && item.type === "food") {
+      const heal = Math.min(maxHp() - state.hp, item.value * 3);
+      if (heal <= 0) {
+        toast("活力已满，暂时不用食物");
+        return;
+      }
+      removeOne();
+      state.hp += heal;
+      log(`食用 <b>${item.name}</b>，恢复 ${heal} 点活力。`);
+      toast(`${item.name} · 活力 +${heal}`);
+    } else if (action === "sell" && item.type === "material") {
+      removeOne();
+      state.coins += item.value;
+      toast(`售出 ${item.name} · +${item.value} 松果币`, "gold");
+    } else if (action === "offer" && item.type === "treasure") {
+      removeOne();
+      const coinReward = item.value * star * 2;
+      const xpReward = Math.max(2, Math.round(item.value * star * 0.6));
+      state.coins += coinReward;
+      addXp(xpReward);
+      if (item.rare && star >= 2) state.sprouts += star - 1;
+      log(`向协会献上 ${star > 1 ? `${star}星` : ""}<b>${item.name}</b>，获得 ${coinReward} 松果币与 ${xpReward} 经验。`);
+      toast(`献宝成功 · +${coinReward} 松果币${item.rare && star >= 2 ? ` · +${star - 1} 嫩芽` : ""}`, "gold");
+    }
+    saveState();
+    render();
   }
 
   function renderSkills() {
@@ -1448,6 +1631,7 @@
     elements.sprouts.textContent = formatNumber(state.sprouts);
     elements.headerHp.textContent = `${state.hp} / ${hpMax}`;
     elements.level.textContent = state.level;
+    elements.profileDisplayName.textContent = state.playerName || "新朋友";
     elements.xpLabel.textContent = `${state.xp} / ${needed}`;
     elements.xpBar.style.width = `${(state.xp / needed) * 100}%`;
     elements.power.textContent = totalPower();
@@ -1491,7 +1675,7 @@
     lastFrame = now;
     updateWorld(delta);
 
-    if (!state.paused) {
+    if (!state.paused && !onboardingBlocked) {
       if (mode === "digging") {
         if (world.mole.phase === "dig") {
           const speed = 1 + state.skills.digger * 0.1 + 0.08;
@@ -1568,6 +1752,11 @@
       document.querySelectorAll("[data-filter]").forEach((node) => node.classList.toggle("active", node === button));
       renderInventory();
     });
+    $("inventory-grid").addEventListener("click", (event) => {
+      const button = event.target.closest("[data-item-action]");
+      if (!button) return;
+      useInventoryItem(button.dataset.itemAction, button.dataset.itemId, Number(button.dataset.itemStar));
+    });
     $("map-selector").addEventListener("click", (event) => {
       const button = event.target.closest("[data-map]");
       if (button) selectMap(button.dataset.map);
@@ -1581,19 +1770,16 @@
       render();
     });
     $("save-name-button").addEventListener("click", () => {
-      const name = elements.playerName.value.trim().replace(/\s+/g, " ").slice(0, 12);
-      if (!name) {
-        toast("名字不能为空", "red");
-        return;
-      }
-      state.playerName = name;
-      saveState();
-      submitScore();
+      claimPlayerName(elements.playerName.value, false);
     });
     $("player-name").addEventListener("keydown", (event) => {
       if (event.key === "Enter") $("save-name-button").click();
     });
     $("refresh-rank-button").addEventListener("click", () => submitScore());
+    elements.nameForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      claimPlayerName(elements.newPlayerName.value, true);
+    });
     $("help-button").addEventListener("click", () => elements.helpModal.classList.remove("hidden"));
     $("help-close").addEventListener("click", () => elements.helpModal.classList.add("hidden"));
     $("help-start").addEventListener("click", () => {
@@ -1623,14 +1809,21 @@
     const requestedMap = new URLSearchParams(window.location.search).get("map");
     if (MAPS[requestedMap]) state.activeMap = requestedMap;
     if (!MAPS[state.activeMap]) state.activeMap = "forest";
+    onboardingBlocked = !state.playerName;
     applyOfflineProgress();
     if (!state.logs.length) log("栗团背起小包，第一次踏进了 <b>苔影森林</b>。");
     state.hp = Math.min(state.hp, maxHp());
+    Object.keys(state.inventory).filter((id) => ITEMS[id]?.rare).forEach((id) => synthesizeRareItem(id, true));
     initWorld();
     bindEvents();
     render();
     initLeaderboard();
-    if (!localStorage.getItem(`${SAVE_KEY}-welcomed`)) elements.helpModal.classList.remove("hidden");
+    if (onboardingBlocked) {
+      elements.nameModal.classList.remove("hidden");
+      setTimeout(() => elements.newPlayerName.focus(), 100);
+    } else if (!localStorage.getItem(`${SAVE_KEY}-welcomed`)) {
+      elements.helpModal.classList.remove("hidden");
+    }
     requestAnimationFrame(loop);
   }
 

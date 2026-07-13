@@ -1,5 +1,5 @@
 -- 在 Supabase Dashboard > SQL Editor 中执行一次。
--- 同时在 Authentication > Providers 中启用 Anonymous Sign-Ins。
+-- 同时在 Authentication > Settings 中启用 Anonymous Sign-Ins。
 
 create table if not exists public.leaderboard (
   user_id uuid primary key references auth.users(id) on delete cascade,
@@ -34,3 +34,30 @@ with check (auth.uid() = user_id);
 
 create index if not exists leaderboard_score_idx
 on public.leaderboard (score desc);
+
+-- 昵称升级：旧数据若有重名，先给较晚记录增加短后缀，再建立不区分大小写的唯一索引。
+with ranked_names as (
+  select
+    user_id,
+    player_name,
+    row_number() over (
+      partition by lower(player_name)
+      order by updated_at asc, user_id
+    ) as duplicate_number
+  from public.leaderboard
+)
+update public.leaderboard as scores
+set player_name = left(ranked_names.player_name, 8) || '_' || left(scores.user_id::text, 3)
+from ranked_names
+where scores.user_id = ranked_names.user_id
+  and ranked_names.duplicate_number > 1;
+
+alter table public.leaderboard
+drop constraint if exists leaderboard_player_name_check;
+
+alter table public.leaderboard
+add constraint leaderboard_player_name_check
+check (char_length(trim(player_name)) between 2 and 12);
+
+create unique index if not exists leaderboard_player_name_unique_ci
+on public.leaderboard (lower(trim(player_name)));
