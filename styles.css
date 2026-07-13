@@ -292,7 +292,8 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .cat-shop-intro { display: flex; gap: 14px; align-items: center; padding-right: 20px; border-right: 1px dashed var(--line); }
 .cat-portrait { position: relative; flex: 0 0 82px; display: grid; place-items: center; height: 100px; overflow: hidden; border-radius: 17px; background: radial-gradient(circle at 50% 30%, #e9d998, transparent 18%), linear-gradient(#829b79, #456451); }
 .cat-portrait::after { content: ""; position: absolute; left: -8px; right: -8px; bottom: -19px; height: 45px; border-radius: 50%; background: #294a39; }
-.cat-portrait span { position: relative; z-index: 1; font-size: 51px; filter: drop-shadow(0 5px 4px rgba(16,31,22,.25)); }
+.cat-portrait img { position: absolute; z-index: 1; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 48%; filter: saturate(.85) contrast(1.05); }
+.cat-portrait::before { content: ""; position: absolute; z-index: 2; inset: 0; background: linear-gradient(transparent 60%, rgba(15,35,24,.5)); pointer-events: none; }
 .cat-portrait i { position: absolute; z-index: 2; bottom: 6px; padding: 3px 6px; border-radius: 5px; color: #f5edcb; background: rgba(21,48,34,.8); font-size: 6px; font-style: normal; }
 .cat-copy { min-width: 0; }.cat-copy h2 { margin: 0; font: 22px "Ma Shan Zheng", cursive; }.cat-copy p { margin: 7px 0 10px; color: var(--muted); font-size: 8px; line-height: 1.7; }
 .favor-row { display: flex; flex-wrap: wrap; gap: 5px; }.favor-row span { padding: 5px 7px; border-radius: 7px; color: var(--muted); background: #f0f0e7; font-size: 7px; }.favor-row b { color: var(--forest); }

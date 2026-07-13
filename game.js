@@ -160,6 +160,7 @@
   let leaderboardSession = null;
   let leaderboardRows = [];
   let worldContext = null;
+  let xiaoheiImage = null;
   let onboardingBlocked = false;
   const WORLD_SIZE = 520;
   const world = {
@@ -1018,6 +1019,8 @@
 
   function initWorld() {
     worldContext = elements.worldCanvas.getContext("2d");
+    xiaoheiImage = new Image();
+    xiaoheiImage.src = "./xiaohei.png";
     resetWorldMap();
     resizeWorldCanvas();
   }
@@ -1391,8 +1394,19 @@
     ctx.fillStyle = "#76553a"; ctx.fillRect(-28, 7, 56, 15);
     ctx.fillStyle = "#d6b35f"; ctx.fillRect(-31, 3, 62, 7);
     ctx.fillStyle = "#513a29"; ctx.fillRect(-25, 21, 4, 12); ctx.fillRect(21, 21, 4, 12);
-    ctx.font = '30px "Segoe UI Emoji"';
-    ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("🐈‍⬛", 0, -8);
+    if (xiaoheiImage?.complete && xiaoheiImage.naturalWidth) {
+      ctx.save();
+      ctx.beginPath(); ctx.arc(0, -9, 21, 0, Math.PI * 2); ctx.clip();
+      const sourceSize = Math.min(xiaoheiImage.naturalWidth, xiaoheiImage.naturalHeight * 0.62);
+      const sourceX = (xiaoheiImage.naturalWidth - sourceSize) / 2;
+      const sourceY = xiaoheiImage.naturalHeight * 0.17;
+      ctx.drawImage(xiaoheiImage, sourceX, sourceY, sourceSize, sourceSize, -22, -31, 44, 44);
+      ctx.restore();
+      ctx.strokeStyle = "#d6b35f"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, -9, 22, 0, Math.PI * 2); ctx.stroke();
+    } else {
+      ctx.font = '30px "Segoe UI Emoji"';
+      ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("🐈‍⬛", 0, -8);
+    }
     ctx.fillStyle = "#e2c36d"; ctx.font = "bold 9px sans-serif"; ctx.fillText("◆", -19, 9); ctx.fillText("✦", 18, 10);
     drawActorLabel(ctx, "商人·小黑", 0, -35, "#f8e8a8");
     ctx.restore();
